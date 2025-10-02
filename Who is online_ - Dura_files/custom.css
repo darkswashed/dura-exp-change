@@ -1,0 +1,263 @@
+#WorldOverView {
+	position: relative;
+	margin: auto;
+	width: 100%;
+}
+#WorldOverViewTop {
+	width: 100%;
+	background-color: #707070;
+	color: white;
+	border-top: 1px solid black;
+	border-left: 1px solid black;
+	border-right: 1px solid black;
+}
+#WorldOverViewTop td {
+	font: normal 18px arial;
+	height: 30px;
+	padding-left: 20px;
+}
+#WorldOverViewMaxOnline {
+	width: 100%;
+	background-color: #ccb399;
+	color: black;
+	border-top: 1px solid black;
+	border-left: 1px solid black;
+	border-right: 1px solid black;
+}
+#WorldOverViewMaxOnline td {
+	height: 25px;
+	font: normal 13px arial;
+	padding-left: 20px;
+}
+
+#WorldOverViewList {
+	width: 100%;
+	background-color: #ccb399;
+	color: black;
+	border-top: 1px solid black;
+	border-left: 1px solid black;
+	border-right: 1px solid black;
+	border-bottom: 1px solid black;
+	font: normal 12px arial;
+}
+#WorldOverViewList #info {
+	width: 100%;
+	background-color: #ccb399;
+	color: black;
+}
+#WorldOverViewList #info td {
+	height: 30px;
+	font: bold 13px arial;
+	padding-left: 5px;
+}
+#WorldOverViewListTr {
+	border-bottom: 1px solid black;
+	height: 30px;
+}
+#WorldOverViewList td {
+	padding-top: 5px;
+	padding-left: 5px;
+	padding-right: 5px;
+	padding-bottom: 5px;
+}
+.WorldList_1 {
+	font: normal 12px arial;
+	background-color: #e4ceb7;
+}
+.WorldList_2 {
+	font: normal 12px arial;
+	background-color: #ccb399;
+}
+
+.ShopList_1 {
+	font: normal 12px arial;
+	background-color: #F1E0C6;
+	height: 40px !important;
+}
+
+.ShopList_2 {
+	font: normal 12px arial;
+	background-color: #D4C0A1;
+	height: 40px !important;
+}
+
+.ShopList_3 {
+	font: normal 12px arial;
+	background-color: #e4ceb7;
+	height: 40px !important;
+}
+
+.ShopList_4 {
+	font: normal 12px arial;
+	background-color: #ccb399;
+	height: 40px !important;
+}
+
+.ShopList_5 {
+	font: normal 12px arial;
+	background-color: #e4ceb7;
+	height: 40px !important;
+}
+
+.ShopList_6 {
+	font: normal 12px arial;
+	background-color: #ccb399;
+	height: 40px !important;
+}
+
+.ShopList_7 {
+	font: normal 12px arial;
+	background-color: #e4ceb7;
+	height: 40px !important;
+}
+
+.ShopList_8 {
+	font: normal 12px arial;
+	background-color: #ccb399;
+	height: 40px !important;
+}
+
+.ShopList_9 {
+	font: normal 12px arial;
+	background-color: #e4ceb7;
+	height: 40px !important;
+}
+
+.ShopList_10 {
+	font: normal 12px arial;
+	background-color: #ccb399;
+	height: 40px !important;
+}
+
+.ShopList_11 {
+	font: normal 12px arial;
+	background-color: #e4ceb7;
+	height: 40px !important;
+}
+
+.ShopList_12 {
+	font: normal 12px arial;
+	background-color: #ccb399;
+	height: 40px !important;
+}
+
+.ShopList_13 {
+	font: normal 12px arial;
+	background-color: #e4ceb7;
+	height: 40px !important;
+}
+
+.ShopList_14 {
+	font: normal 12px arial;
+	background-color: #ccb399;
+	height: 40px !important;
+}
+
+.ShopList_15 {
+	font: normal 12px arial;
+	background-color: #e4ceb7;
+	height: 40px !important;
+}
+
+.ShopList_16 {
+	font: normal 12px arial;
+	background-color: #ccb399;
+	height: 40px !important;
+}
+
+.sPanel {
+	width: 180px;
+	margin: auto;
+}
+
+.sPanel_streamers_top {
+	position: relative;
+	width: 180px;
+	height: 48px;
+	margin: auto;
+	background-image: url(/images/sidebox/streamer_top.png);
+	background-repeat: no-repeat;
+}
+
+.sPanel_inner {
+	position: relative;
+	width: 180px;
+	margin: auto;
+	background-image: url(/images/sidebox/random_info__mid.png);
+	background-repeat: repeat-y;
+	color: black;
+	font: normal 12px arial;
+	text-align: left;
+	padding-top: 0px;
+	padding-bottom: 10px;
+}
+
+.sPanel_bottom {
+	position: relative;
+	width: 180px;
+	height: 14px;
+	margin: auto;
+	background-image: url(/images/sidebox/random_info__bottom.png);
+	background-repeat: no-repeat;
+}
+
+.streamer_smallbox {
+	position: relative;
+	display: inline-table;
+	padding-top: 1px;
+	padding-left: 5px;
+	padding-right: 5px;
+	padding-bottom: 1px;
+	border-radius: 5px;
+	border-collapse: separate;
+	font: normal 10px arial;
+	color: black;
+	border: solid 1px #4d4d4d;
+	background-color: #c1c1c1;
+}
+.streamer_logo {
+	position: relative;
+	width: 100px;
+	height: 100px;
+	background-size: 100px 100px !important;
+	border: solid 2px #685c4e;
+	border-radius: 5px;
+	background-color: #e6cfb2 !important;
+}
+.streamer_smallbox {
+	position: relative;
+	display: inline-table;
+	padding-top: 1px;
+	padding-left: 5px;
+	padding-right: 5px;
+	padding-bottom: 1px;
+	border-radius: 5px;
+	border-collapse: separate;
+	font: normal 10px arial;
+	color: black;
+	border: solid 1px #4d4d4d;
+	background-color: #c1c1c1;
+}
+table {
+	border-spacing: 0;
+	border-collapse: collapse;
+}
+.streamer_logo_small{
+	position: relative;
+	width: 20px;
+	height: 20px;
+	background-size: 20px 20px !important;
+	border: solid 1px #685c4e;
+	border-radius: 3px;
+	background-color: #e6cfb2 !important;
+}
+a:visited {
+	color: #0042a0;
+	text-decoration: none !important;
+	font-weight: bold;
+}
+a {
+	background-color: transparent;
+	text-decoration: none;
+	font-weight: bold;
+}
