@@ -154,8 +154,14 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
         seven_day_change = today_exp - seven_day_exp if seven_day_exp is not None else None
         thirty_day_change = today_exp - thirty_day_exp if thirty_day_exp is not None else None
         
-        # Only include players with at least one valid comparison
-        if day_change is not None or seven_day_change is not None or thirty_day_change is not None:
+        # Only include players who have actual experience changes (not zero or None)
+        has_changes = (
+            (day_change is not None and day_change != 0) or
+            (seven_day_change is not None and seven_day_change != 0) or
+            (thirty_day_change is not None and thirty_day_change != 0)
+        )
+        
+        if has_changes:
             changes_data.append({
                 'name': name,
                 'today': today_exp,
