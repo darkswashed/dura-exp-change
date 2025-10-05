@@ -6,6 +6,7 @@ import subprocess
 from datetime import datetime, timedelta
 import pytz
 from bs4 import BeautifulSoup
+from urllib.parse import quote
 
 BASE_URL_FIRST = "https://classic.dura-online.com/?highscores/experience"
 BASE_URL_PAGED = "https://classic.dura-online.com/?highscores/experience/{}"
@@ -234,6 +235,8 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }}
             .name {{ text-align: left !important; font-weight: bold; }}
+            .name a {{ color: #2c3e50; text-decoration: none; }}
+            .name a:hover {{ color: #3498db; text-decoration: underline; cursor: pointer; }}
             tr:nth-child(even) {{ background: #f8f9fa; }}
             .gain {{ color: #27ae60; font-weight: bold; }}
             .loss {{ color: #e74c3c; font-weight: bold; }}
@@ -282,7 +285,7 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
         
         html_content += f"""
             <tr>
-                <td class="name">{name}</td>
+                <td class="name"><a href="player_history.html?player={quote(name)}" style="color: #2c3e50; text-decoration: none;">{name}</a></td>
                 <td>{today:,}</td>
                 <td>{day_change_html}</td>
                 <td>{seven_day_change_html}</td>
