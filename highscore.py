@@ -131,10 +131,10 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
     today_date = get_eastern_date()
     
     # Find best available historical data using intelligent fallback
-    # For 7-day: look 2-14 days back (more flexible for new installations)
-    seven_day_data, seven_day_date, seven_days_back = find_best_historical_data(2, 14)
-    # For 30-day: look 7-45 days back (will use best available older data)
-    thirty_day_data, thirty_day_date, thirty_days_back = find_best_historical_data(7, 45)
+    # For 7-day: look 5-10 days back (closer to actual weekly data)
+    seven_day_data, seven_day_date, seven_days_back = find_best_historical_data(5, 10)
+    # For 30-day: look 25-35 days back (closer to actual monthly data)
+    thirty_day_data, thirty_day_date, thirty_days_back = find_best_historical_data(25, 35)
     
     # Get list of all available snapshots for summary
     all_snapshots = get_all_available_snapshots()
@@ -219,8 +219,8 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
             </tr>
             <tr>
                 <th>1 Day</th>
-                <th>{seven_days_back if seven_days_back else '7'} Days</th>
-                <th>{thirty_days_back if thirty_days_back else '30'} Days</th>
+                <th>7 Days</th>
+                <th>30 Days</th>
             </tr>
     """
     
