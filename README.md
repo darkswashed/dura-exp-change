@@ -8,6 +8,7 @@ Automated tracking and comparison of player experience on Dura Online Classic.
 - 📊 **Comparison Reports**: Generates HTML reports comparing daily changes
 - 🤖 **GitHub Actions**: Fully automated with scheduled runs
 - 📈 **GitHub Pages**: Hosts comparison reports
+- 📉 **Player Stats**: View historical experience gain charts for individual players
 
 ## Setup Instructions
 
@@ -56,7 +57,9 @@ You can also trigger the workflow manually:
 │   ├── highscores_2025-10-03.csv
 │   └── highscores_2025-10-04.csv
 ├── highscore.py               # Main Python script
+├── app.py                     # Flask API for player history
 ├── index.html                 # Generated comparison report
+├── playerstats.html           # Player statistics page
 ├── requirements.txt           # Python dependencies
 └── README.md                  # This file
 ```
@@ -91,7 +94,35 @@ The workflow runs automatically on schedule, but you can also:
 
 - **CSV Files**: Stored in `snapshots/` directory
 - **HTML Report**: Generated as `index.html` (viewable via GitHub Pages)
+- **Player Stats**: Available at `playerstats.html` for viewing individual player history
 - **Console Output**: Status updates and statistics printed to workflow logs
+
+## Player Stats Feature
+
+The `playerstats.html` page allows you to view historical experience gain for any player:
+
+### Running the Backend API
+
+To use the player stats feature locally:
+
+```bash
+# Install Flask dependencies
+pip install flask flask-cors
+
+# Start the Flask API server
+python app.py
+```
+
+The API will run on `http://localhost:5000` and provides the `/player_history` endpoint.
+
+### Using Player Stats
+
+1. Open `playerstats.html` in your browser (via GitHub Pages or local server)
+2. Enter a player's name (case-sensitive)
+3. Click "Search" to view their historical experience chart
+4. The chart displays experience points over time based on available snapshots
+
+**Note**: For GitHub Pages deployment, you'll need to deploy the Flask backend separately (e.g., on Heroku, Railway, or AWS) and update the API_URL in `playerstats.html` to point to your deployed backend.
 
 ## Troubleshooting
 
