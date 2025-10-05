@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Experience History</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .search-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .suggestions {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-top: none;
+            background: white;
+            border-radius: 0 0 5px 5px;
+        }
+        
+        .suggestion {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .suggestion:hover {
+            background-color: #e9ecef;
+        }
+        
+        .suggestion:last-child {
+            border-bottom: none;
+        }
+        
+        #chartContainer {
+            margin-top: 30px;
+            height: 400px;
+            position: relative;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 12px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 12px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏆 Player Experience History Tracker</h1>
+        
+        <div class="search-section">
+            <input type="text" id="playerSearch" class="search-input" placeholder="Search for a player..." autocomplete="off">
+            <div id="suggestions" class="suggestions" style="display: none;"></div>
+        </div>
+        
+        <div id="loadingMessage" class="loading">Loading CSV files...</div>
+        <div id="errorMessage" style="display: none;"></div>
+        <div id="playerInfo" style="display: none;"></div>
+        
+        <div id="playerStats" class="stats" style="display: none;"></div>
+        
+        <div id="chartContainer" style="display: none;">
+            <canvas id="experienceChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        class PlayerHistoryTracker {
+            constructor() {
+                this.csvData = new Map(); // Map of date -> player data
+                this.allPlayers = new Set();
+                this.chart = null;
+                this.csvFiles = [
+                    'snapshots/highscores_2025-10-02.csv',
+                    'snapshots/highscores_2025-10-03.csv',
+                    'snapshots/highscores_2025-10-04.csv',
+                    'snapshots/highscores_2025-10-05.csv'
+                ];
+                
+                this.initializeEventListeners();
+                this.loadAllCSVFiles(); // Auto-load on startup
+            }
+            
+            initializeEventListeners() {
+                const searchInput = document.getElementById('playerSearch');
+                const suggestions = document.getElementById('suggestions');
+                
+                // Search events
+                searchInput.addEventListener('input', (e) => {
+                    this.handleSearch(e.target.value);
+                });
+                
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const firstSuggestion = suggestions.querySelector('.suggestion');
+                        if (firstSuggestion) {
+                            this.selectPlayer(firstSuggestion.textContent);
+                        }
+                    }
+                });
+                
+                // Hide suggestions when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.search-section')) {
+                        suggestions.style.display = 'none';
+                    }
+                });
+            }
+            
+            async loadAllCSVFiles() {
+                try {
+                    const loadingMessage = document.getElementById('loadingMessage');
+                    loadingMessage.textContent = 'Loading CSV files...';
+                    
+                    for (const file of this.csvFiles) {
+                        const date = this.extractDateFromFilename(file);
+                        await this.loadCSVFile(file, date);
+                        loadingMessage.textContent = `Loading ${file}...`;
+                    }
+                    
+                    loadingMessage.style.display = 'none';
+                    this.showInfo(`Loaded ${this.csvFiles.length} CSV files with ${this.allPlayers.size} unique players.`);
+                    
+                } catch (error) {
+                    this.showError(`Error loading CSV files: ${error.message}`);
+                }
+            }
+            
+            extractDateFromFilename(filename) {
+                const match = filename.match(/(\d{4}-\d{2}-\d{2})/);
+                return match ? match[1] : filename;
+            }
+            
+            async loadCSVFile(filename, date) {
+                return new Promise((resolve, reject) => {
+                    Papa.parse(filename, {
+                        download: true,
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: (results) => {
+                            if (results.errors.length > 0) {
+                                console.warn(`Warnings parsing ${filename}:`, results.errors);
+                            }
+                            
+                            const playerData = new Map();
+                            results.data.forEach(row => {
+                                if (row.Name && row.Experience) {
+                                    const name = row.Name.trim();
+                                    const experience = parseInt(row.Experience);
+                                    if (!isNaN(experience)) {
+                                        playerData.set(name, experience);
+                                        this.allPlayers.add(name);
+                                    }
+                                }
+                            });
+                            
+                            this.csvData.set(date, playerData);
+                            resolve();
+                        },
+                        error: (error) => {
+                            reject(error);
+                        }
+                    });
+                });
+            }
+            
+            handleSearch(query) {
+                const suggestions = document.getElementById('suggestions');
+                
+                if (query.length < 2) {
+                    suggestions.style.display = 'none';
+                    return;
+                }
+                
+                const matches = Array.from(this.allPlayers)
+                    .filter(player => player.toLowerCase().includes(query.toLowerCase()))
+                    .slice(0, 10); // Limit to 10 suggestions
+                
+                if (matches.length === 0) {
+                    suggestions.style.display = 'none';
+                    return;
+                }
+                
+                suggestions.innerHTML = matches
+                    .map(player => `<div class="suggestion" onclick="tracker.selectPlayer('${player.replace(/'/g, "\\'")}')">${player}</div>`)
+                    .join('');
+                
+                suggestions.style.display = 'block';
+            }
+            
+            selectPlayer(playerName) {
+                document.getElementById('playerSearch').value = playerName;
+                document.getElementById('suggestions').style.display = 'none';
+                this.showPlayerHistory(playerName);
+            }
+            
+            showPlayerHistory(playerName) {
+                const playerData = this.getPlayerHistory(playerName);
+                
+                if (playerData.length === 0) {
+                    this.showError(`No data found for player: ${playerName}`);
+                    return;
+                }
+                
+                this.showPlayerInfo(playerName, playerData);
+                this.showPlayerStats(playerData);
+                this.createChart(playerName, playerData);
+            }
+            
+            getPlayerHistory(playerName) {
+                const history = [];
+                
+                for (const [date, players] of this.csvData.entries()) {
+                    const experience = players.get(playerName);
+                    if (experience !== undefined) {
+                        history.push({ date, experience });
+                    }
+                }
+                
+                // Sort by date
+                history.sort((a, b) => new Date(a.date) - new Date(b.date));
+                return history;
+            }
+            
+            showPlayerInfo(playerName, data) {
+                const playerInfo = document.getElementById('playerInfo');
+                const latestData = data[data.length - 1];
+                const oldestData = data[0];
+                
+                playerInfo.innerHTML = `
+                    <div class="info">
+                        <strong>Player:</strong> ${playerName}<br>
+                        <strong>Data Points:</strong> ${data.length} snapshots<br>
+                        <strong>Date Range:</strong> ${oldestData.date} to ${latestData.date}
+                    </div>
+                `;
+                playerInfo.style.display = 'block';
+            }
+            
+            showPlayerStats(data) {
+                const statsContainer = document.getElementById('playerStats');
+                
+                if (data.length < 2) {
+                    statsContainer.style.display = 'none';
+                    return;
+                }
+                
+                const latestExp = data[data.length - 1].experience;
+                const oldestExp = data[0].experience;
+                const totalGain = latestExp - oldestExp;
+                const avgDailyGain = totalGain / (data.length - 1);
+                const maxExp = Math.max(...data.map(d => d.experience));
+                const minExp = Math.min(...data.map(d => d.experience));
+                
+                statsContainer.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">${latestExp.toLocaleString()}</div>
+                        <div class="stat-label">Current Experience</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${totalGain.toLocaleString()}</div>
+                        <div class="stat-label">Total Gain</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${Math.round(avgDailyGain).toLocaleString()}</div>
+                        <div class="stat-label">Avg Daily Gain</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${maxExp.toLocaleString()}</div>
+                        <div class="stat-label">Peak Experience</div>
+                    </div>
+                `;
+                
+                statsContainer.style.display = 'grid';
+            }
+            
+            createChart(playerName, data) {
+                const ctx = document.getElementById('experienceChart').getContext('2d');
+                
+                // Destroy existing chart if it exists
+                if (this.chart) {
+                    this.chart.destroy();
+                }
+                
+                const labels = data.map(d => d.date);
+                const experiences = data.map(d => d.experience);
+                
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: `${playerName} Experience`,
+                            data: experiences,
+                            borderColor: '#007bff',
+                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.1,
+                            pointBackgroundColor: '#007bff',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `${playerName} - Experience History`,
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                },
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Experience Points'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString();
+                                    }
+                                },
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            }
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `Experience: ${context.parsed.y.toLocaleString()}`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                document.getElementById('chartContainer').style.display = 'block';
+            }
+            
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.innerHTML = `<div class="error">${message}</div>`;
+                errorDiv.style.display = 'block';
+                
+                // Hide after 5 seconds
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 5000);
+            }
+            
+            showInfo(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.innerHTML = `<div class="info">${message}</div>`;
+                errorDiv.style.display = 'block';
+                
+                // Hide after 3 seconds
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        // Initialize the tracker when the page loads
+        let tracker;
+        window.addEventListener('DOMContentLoaded', () => {
+            tracker = new PlayerHistoryTracker();
+        });
+    </script>
+</body>
+</html>
