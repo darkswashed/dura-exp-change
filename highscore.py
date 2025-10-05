@@ -4,11 +4,17 @@ import time
 import requests
 import subprocess
 from datetime import datetime, timedelta
+import pytz
 from bs4 import BeautifulSoup
 
 BASE_URL_FIRST = "https://classic.dura-online.com/?highscores/experience"
 BASE_URL_PAGED = "https://classic.dura-online.com/?highscores/experience/{}"
 SAVE_DIR = "snapshots"
+
+def get_eastern_date():
+    """Get current date in Eastern Time (EST/EDT)"""
+    eastern = pytz.timezone('US/Eastern')
+    return datetime.now(eastern)
 
 def fetch_page(page):
     if page == 1:
@@ -50,7 +56,7 @@ def save_csv(data, date=None):
     if not os.path.exists(SAVE_DIR):
         os.makedirs(SAVE_DIR)
     if date is None:
-        date = datetime.now().strftime("%Y-%m-%d")
+        date = get_eastern_date().strftime("%Y-%m-%d")
     filename = os.path.join(SAVE_DIR, f"highscores_{date}.csv")
     with open(filename, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
@@ -99,7 +105,7 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
         </style>
     </head>
     <body>
-        <h2>Experience Changes ({datetime.now().strftime("%Y-%m-%d")})</h2>
+        <h2>Experience Changes ({get_eastern_date().strftime("%Y-%m-%d")})</h2>
         <table>
             <tr><th>Name</th><th>Yesterday</th><th>Today</th><th>Change</th></tr>
     """
@@ -138,10 +144,10 @@ def compare_only(today_date=None, yesterday_date=None):
     """
     # Default to current date and previous day if not specified
     if today_date is None:
-        today_date = datetime.now().strftime("%Y-%m-%d")
+        today_date = get_eastern_date().strftime("%Y-%m-%d")
     
     if yesterday_date is None:
-        yesterday_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        yesterday_date = (get_eastern_date() - timedelta(days=1)).strftime("%Y-%m-%d")
     
     # Construct file paths
     today_file = os.path.join(SAVE_DIR, f"highscores_{today_date}.csv")
@@ -219,10 +225,10 @@ if __name__ == "__main__":
         print("Starting full scrape and compare process...")
         rows = build_snapshot(pages=200, delay=0.25)
 
-        today_str = datetime.now().strftime("%Y-%m-%d")
+        today_str = get_eastern_date().strftime("%Y-%m-%d")
         today_file = save_csv(rows, today_str)
 
-        yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        yesterday_str = (get_eastern_date() - timedelta(days=1)).strftime("%Y-%m-%d")
         yesterday_file = os.path.join(SAVE_DIR, f"highscores_{yesterday_str}.csv")
 
         today_dict = {name: exp for name, exp in rows}
@@ -234,7 +240,7 @@ if __name__ == "__main__":
         print("CSV snapshot saved:", today_file)
         print("HTML report saved:", report_file)
 
-        git_success = git_commit_push(report_file, commit_message=f"Update index.html {datetime.now().strftime('%Y-%m-%d')}")
+        git_success = git_commit_push(report_file, commit_message=f"Update index.html {get_eastern_date().strftime('%Y-%m-%d')}")
         
         # Print completion status for full scrape
         common_players = set(today_dict.keys()) & set(yesterday_dict.keys())
