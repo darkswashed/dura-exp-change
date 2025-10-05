@@ -8,6 +8,7 @@ Automated tracking and comparison of player experience on Dura Online Classic.
 - 📊 **Comparison Reports**: Generates HTML reports comparing daily changes
 - 🤖 **GitHub Actions**: Fully automated with scheduled runs
 - 📈 **GitHub Pages**: Hosts comparison reports
+- 🎮 **Player Stats**: Interactive visualization of individual player progression
 
 ## Setup Instructions
 
@@ -57,6 +58,8 @@ You can also trigger the workflow manually:
 │   └── highscores_2025-10-04.csv
 ├── highscore.py               # Main Python script
 ├── index.html                 # Generated comparison report
+├── playerstats.html           # Player stats visualization page
+├── PLAYERSTATS.md             # Player stats documentation
 ├── requirements.txt           # Python dependencies
 └── README.md                  # This file
 ```
@@ -91,6 +94,7 @@ The workflow runs automatically on schedule, but you can also:
 
 - **CSV Files**: Stored in `snapshots/` directory
 - **HTML Report**: Generated as `index.html` (viewable via GitHub Pages)
+- **Player Stats**: Interactive player visualization at `playerstats.html` (see [PLAYERSTATS.md](PLAYERSTATS.md))
 - **Console Output**: Status updates and statistics printed to workflow logs
 
 ## Troubleshooting
