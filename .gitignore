@@ -1,4 +1,11 @@
-# Ignore everything except index.html
+# Ignore everything except specific files
 *
 !index.html
 !.gitignore
+!.github/
+!.github/**
+!highscore.py
+!requirements.txt
+!README.md
+!snapshots/
+!snapshots/**

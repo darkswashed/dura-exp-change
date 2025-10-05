@@ -1,9 +1,9 @@
 name: Dura Highscores Tracker
 
 on:
-  # Run daily at 6 AM UTC (adjust timezone as needed)
+  # Run daily at 10 AM EST (3 PM UTC)
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 15 * * *'
   
   # Allow manual triggering
   workflow_dispatch:
