@@ -206,6 +206,9 @@
                     loadingMessage.style.display = 'none';
                     this.showInfo(`Loaded ${this.csvFiles.length} CSV files with ${this.allPlayers.size} unique players.`);
                     
+                    // Check for URL parameter after loading
+                    this.checkURLParameter();
+                    
                 } catch (error) {
                     this.showError(`Error loading CSV files: ${error.message}`);
                 }
@@ -214,6 +217,35 @@
             extractDateFromFilename(filename) {
                 const match = filename.match(/(\d{4}-\d{2}-\d{2})/);
                 return match ? match[1] : filename;
+            }
+            
+            checkURLParameter() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const playerParam = urlParams.get('player');
+                
+                if (playerParam) {
+                    // Decode the player name (in case it has special characters)
+                    const playerName = decodeURIComponent(playerParam);
+                    
+                    // Find the player (case-insensitive search)
+                    const exactMatch = Array.from(this.allPlayers).find(p => 
+                        p.toLowerCase() === playerName.toLowerCase()
+                    );
+                    
+                    if (exactMatch) {
+                        // Set the search input and show the player
+                        document.getElementById('playerSearch').value = exactMatch;
+                        this.selectPlayer(exactMatch);
+                        
+                        // Update the page title
+                        document.title = `${exactMatch} - Player Experience History`;
+                    } else {
+                        // Show error if player not found, but also show suggestions
+                        this.showError(`Player "${playerName}" not found. Try searching below.`);
+                        document.getElementById('playerSearch').value = playerName;
+                        this.handleSearch(playerName);
+                    }
+                }
             }
             
             async loadCSVFile(filename, date) {
@@ -277,6 +309,21 @@
                 document.getElementById('playerSearch').value = playerName;
                 document.getElementById('suggestions').style.display = 'none';
                 this.showPlayerHistory(playerName);
+                
+                // Update URL without refreshing the page
+                this.updateURL(playerName);
+            }
+            
+            updateURL(playerName) {
+                const url = new URL(window.location);
+                url.searchParams.set('player', encodeURIComponent(playerName));
+                window.history.pushState({}, '', url);
+            }
+            
+            generateShareableURL(playerName) {
+                const url = new URL(window.location.origin + window.location.pathname);
+                url.searchParams.set('player', encodeURIComponent(playerName));
+                return url.toString();
             }
             
             showPlayerHistory(playerName) {
@@ -311,12 +358,20 @@
                 const playerInfo = document.getElementById('playerInfo');
                 const latestData = data[data.length - 1];
                 const oldestData = data[0];
+                const shareableURL = this.generateShareableURL(playerName);
                 
                 playerInfo.innerHTML = `
                     <div class="info">
                         <strong>Player:</strong> ${playerName}<br>
                         <strong>Data Points:</strong> ${data.length} snapshots<br>
-                        <strong>Date Range:</strong> ${oldestData.date} to ${latestData.date}
+                        <strong>Date Range:</strong> ${oldestData.date} to ${latestData.date}<br>
+                        <div style="margin-top: 10px;">
+                            <button onclick="navigator.clipboard.writeText('${shareableURL}'); this.textContent='Copied!'; setTimeout(() => this.innerHTML='🔗 Share Link', 2000)" 
+                                    style="padding: 5px 10px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">
+                                🔗 Share Link
+                            </button>
+                            <span style="font-size: 11px; color: #666; margin-left: 10px;">Click to copy shareable URL</span>
+                        </div>
                     </div>
                 `;
                 playerInfo.style.display = 'block';
