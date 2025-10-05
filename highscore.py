@@ -105,6 +105,31 @@ def find_best_historical_data(target_days_back, max_days_back):
     print(f"No historical data found in {target_days_back}-{max_days_back} day range")
     return {}, None, None
 
+def find_oldest_available_data():
+    """
+    Find the oldest available historical data for fallback comparisons
+    
+    Returns:
+        tuple: (data_dict, actual_date_found, days_back_found)
+    """
+    all_snapshots = get_all_available_snapshots()
+    if not all_snapshots:
+        return {}, None, None
+    
+    # Get the oldest snapshot (last in the sorted list)
+    oldest_date = all_snapshots[-1]
+    oldest_filepath = os.path.join(SAVE_DIR, f"highscores_{oldest_date}.csv")
+    
+    data = load_csv(oldest_filepath)
+    if data:
+        today_date = get_eastern_date()
+        oldest_datetime = datetime.strptime(oldest_date, "%Y-%m-%d")
+        days_back = (today_date.date() - oldest_datetime.date()).days
+        print(f"Using oldest available data: {oldest_date} ({days_back} days back)")
+        return data, oldest_date, days_back
+    
+    return {}, None, None
+
 def get_all_available_snapshots():
     """Get all available snapshot dates sorted from newest to oldest"""
     if not os.path.exists(SAVE_DIR):
@@ -135,6 +160,18 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
     seven_day_data, seven_day_date, seven_days_back = find_best_historical_data(5, 10)
     # For 30-day: look 25-35 days back (closer to actual monthly data)
     thirty_day_data, thirty_day_date, thirty_days_back = find_best_historical_data(25, 35)
+    
+    # If no specific period data found, use oldest available as fallback
+    oldest_data, oldest_date, oldest_days_back = find_oldest_available_data()
+    
+    # Use oldest data as fallback for missing periods
+    if not seven_day_data and oldest_data:
+        seven_day_data, seven_day_date, seven_days_back = oldest_data, oldest_date, oldest_days_back
+        print(f"Using oldest data for 7-day fallback: {oldest_date} ({oldest_days_back} days)")
+    
+    if not thirty_day_data and oldest_data:
+        thirty_day_data, thirty_day_date, thirty_days_back = oldest_data, oldest_date, oldest_days_back
+        print(f"Using oldest data for 30-day fallback: {oldest_date} ({oldest_days_back} days)")
     
     # Get list of all available snapshots for summary
     all_snapshots = get_all_available_snapshots()
