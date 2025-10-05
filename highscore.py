@@ -167,8 +167,8 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
                 'thirty_day_change': thirty_day_change
             })
     
-    # Sort by 1-day change (descending), then by 7-day change
-    changes_data.sort(key=lambda x: (x['day_change'] or 0, x['seven_day_change'] or 0), reverse=True)
+    # Sort by player name alphabetically
+    changes_data.sort(key=lambda x: x['name'].lower())
     
     # Generate HTML
     html_content = f"""
@@ -179,7 +179,6 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
         <style>
             body {{ font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }}
             .header {{ text-align: center; margin-bottom: 30px; }}
-            .summary {{ background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }}
             table {{ border-collapse: collapse; width: 100%; margin-top: 20px; background: #fff; }}
             th, td {{ border: 1px solid #ddd; padding: 10px; text-align: right; }}
             th {{ background: #2c3e50; color: #fff; text-align: center; }}
@@ -190,31 +189,12 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
             .neutral {{ color: #7f8c8d; }}
             .na {{ color: #bdc3c7; font-style: italic; }}
             .period-header {{ background: #34495e !important; }}
-            .snapshot-list {{ max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px; }}
         </style>
     </head>
     <body>
         <div class="header">
             <h1>🎮 Dura Online Highscores Tracker</h1>
             <h2>Experience Changes - {today_date.strftime("%Y-%m-%d")}</h2>
-        </div>
-        
-        <div class="summary">
-            <h3>📊 Summary</h3>
-            <p><strong>Total Players Tracked:</strong> {len(changes_data):,}</p>
-            <p><strong>Available Snapshots:</strong> {len(all_snapshots)} files</p>
-            <div class="snapshot-list">
-                <strong>Recent snapshots:</strong> {', '.join(all_snapshots[:10])}
-                {f'... and {len(all_snapshots) - 10} more' if len(all_snapshots) > 10 else ''}
-            </div>
-            <br>
-            <p><strong>Historical Comparisons:</strong></p>
-            <ul>
-                <li><strong>7-day range:</strong> {'✅' if seven_day_data else '❌'} 
-                    {f'Using {seven_day_date} ({seven_days_back} days back, {len(seven_day_data):,} players)' if seven_day_date else 'No data available in 7-14 day range'}</li>
-                <li><strong>30-day range:</strong> {'✅' if thirty_day_data else '❌'} 
-                    {f'Using {thirty_day_date} ({thirty_days_back} days back, {len(thirty_day_data):,} players)' if thirty_day_date else 'No data available in 30-45 day range'}</li>
-            </ul>
         </div>
         
         <table>
