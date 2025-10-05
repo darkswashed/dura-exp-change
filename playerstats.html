@@ -26,6 +26,16 @@
             // Replace with actual API call to fetch data based on playerName
             const data = await getPlayerData(playerName); // Placeholder function
             
+            // Calculate daily changes in experience
+            const dailyChanges = [];
+            for (let i = 0; i < data.experience.length; i++) {
+                if (i === 0) {
+                    dailyChanges.push(null); // No change for the first day
+                } else {
+                    dailyChanges.push(data.experience[i] - data.experience[i - 1]);
+                }
+            }
+            
             const ctx = document.getElementById('playerStatsChart').getContext('2d');
             const playerStatsChart = new Chart(ctx, {
                 type: 'line',
@@ -36,7 +46,8 @@
                         data: data.experience,
                         borderColor: 'rgba(75, 192, 192, 1)',
                         borderWidth: 2,
-                        fill: false
+                        fill: false,
+                        dailyChanges: dailyChanges // Store daily changes for tooltip
                     }]
                 },
                 options: {
@@ -52,6 +63,34 @@
                             title: {
                                 display: true,
                                 text: 'Experience'
+                            },
+                            // Dynamic Y-axis scaling based on data
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value, index, ticks) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const dataset = context.dataset;
+                                    const index = context.dataIndex;
+                                    const experience = dataset.data[index];
+                                    const dailyChange = dataset.dailyChanges[index];
+                                    
+                                    let label = dataset.label + ': ' + experience.toLocaleString();
+                                    
+                                    if (dailyChange !== null) {
+                                        const changeText = dailyChange >= 0 ? '+' + dailyChange.toLocaleString() : dailyChange.toLocaleString();
+                                        label += ' (Daily Change: ' + changeText + ')';
+                                    }
+                                    
+                                    return label;
+                                }
                             }
                         }
                     }
