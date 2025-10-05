@@ -8,14 +8,22 @@
             .header { text-align: center; margin-bottom: 30px; }
             table { border-collapse: collapse; width: 100%; margin-top: 20px; background: #fff; }
             th, td { border: 1px solid #ddd; padding: 10px; text-align: right; }
-            th { background: #2c3e50; color: #fff; text-align: center; }
+            th { 
+                background: #2c3e50; 
+                color: #fff; 
+                text-align: center; 
+                position: sticky; 
+                top: 0; 
+                z-index: 10;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
             .name { text-align: left !important; font-weight: bold; }
             tr:nth-child(even) { background: #f8f9fa; }
             .gain { color: #27ae60; font-weight: bold; }
             .loss { color: #e74c3c; font-weight: bold; }
             .neutral { color: #7f8c8d; }
             .na { color: #bdc3c7; font-style: italic; }
-            .period-header { background: #34495e !important; }
+            .period-header { background: #34495e !important; position: sticky; top: 0; z-index: 10; }
         </style>
     </head>
     <body>
