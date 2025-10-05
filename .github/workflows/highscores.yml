@@ -1,0 +1,86 @@
+name: Dura Highscores Tracker
+
+on:
+  # Run daily at 6 AM UTC (adjust timezone as needed)
+  schedule:
+    - cron: '0 6 * * *'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Execution mode'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - compare-only
+      today_date:
+        description: 'Today date (YYYY-MM-DD) - for compare-only mode'
+        required: false
+        type: string
+      yesterday_date:
+        description: 'Yesterday date (YYYY-MM-DD) - for compare-only mode'
+        required: false
+        type: string
+
+jobs:
+  highscores:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Configure Git
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+    
+    - name: Create snapshots directory
+      run: mkdir -p snapshots
+    
+    - name: Run highscores script (Full Mode)
+      if: ${{ github.event.inputs.mode != 'compare-only' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: python highscore.py
+    
+    - name: Run highscores script (Compare Only Mode)
+      if: ${{ github.event.inputs.mode == 'compare-only' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        if [ -n "${{ github.event.inputs.today_date }}" ] && [ -n "${{ github.event.inputs.yesterday_date }}" ]; then
+          python highscore.py --compare-only "${{ github.event.inputs.today_date }}" "${{ github.event.inputs.yesterday_date }}"
+        elif [ -n "${{ github.event.inputs.today_date }}" ]; then
+          python highscore.py --compare-only "${{ github.event.inputs.today_date }}"
+        else
+          python highscore.py --compare-only
+        fi
+    
+    - name: Commit and push changes
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        git add .
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Automated highscores update - $(date +'%Y-%m-%d %H:%M:%S')"
+          git push
+        fi
