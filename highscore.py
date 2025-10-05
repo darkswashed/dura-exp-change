@@ -4,11 +4,17 @@ import time
 import requests
 import subprocess
 from datetime import datetime, timedelta
+import pytz
 from bs4 import BeautifulSoup
 
 BASE_URL_FIRST = "https://classic.dura-online.com/?highscores/experience"
 BASE_URL_PAGED = "https://classic.dura-online.com/?highscores/experience/{}"
 SAVE_DIR = "snapshots"
+
+def get_eastern_date():
+    """Get current date in Eastern Time (EST/EDT)"""
+    eastern = pytz.timezone('US/Eastern')
+    return datetime.now(eastern)
 
 def fetch_page(page):
     if page == 1:
@@ -71,45 +77,196 @@ def load_csv(filepath):
             data[row["Name"]] = int(row["Experience"].replace(",", ""))
     return data
 
+def find_best_historical_data(target_days_back, max_days_back):
+    """
+    Find the best available historical data within a range of days
+    
+    Args:
+        target_days_back: Preferred number of days back (e.g., 7 for weekly)
+        max_days_back: Maximum days to look back (e.g., 10 for weekly range)
+    
+    Returns:
+        tuple: (data_dict, actual_date_found, days_back_found)
+    """
+    today_date = get_eastern_date()
+    
+    # Start from target days back and work backwards to find available data
+    for days_back in range(target_days_back, max_days_back + 1):
+        check_date = (today_date - timedelta(days=days_back)).strftime("%Y-%m-%d")
+        filepath = os.path.join(SAVE_DIR, f"highscores_{check_date}.csv")
+        
+        if os.path.exists(filepath):
+            data = load_csv(filepath)
+            if data:  # Make sure data was actually loaded
+                print(f"Found historical data: {check_date} ({days_back} days back)")
+                return data, check_date, days_back
+    
+    # If no data found in the range, return empty
+    print(f"No historical data found in {target_days_back}-{max_days_back} day range")
+    return {}, None, None
+
+def get_all_available_snapshots():
+    """Get all available snapshot dates sorted from newest to oldest"""
+    if not os.path.exists(SAVE_DIR):
+        return []
+    
+    snapshot_files = []
+    for filename in os.listdir(SAVE_DIR):
+        if filename.startswith("highscores_") and filename.endswith(".csv"):
+            # Extract date from filename
+            date_part = filename.replace("highscores_", "").replace(".csv", "")
+            try:
+                # Validate date format
+                datetime.strptime(date_part, "%Y-%m-%d")
+                snapshot_files.append(date_part)
+            except ValueError:
+                continue
+    
+    # Sort from newest to oldest
+    snapshot_files.sort(reverse=True)
+    return snapshot_files
+
 def compare_and_generate_html(today_data, yesterday_data, output_file):
-    """Compare two datasets and generate HTML report"""
-    changes = []
-    for name, exp in today_data.items():
-        old_exp = yesterday_data.get(name, None)
-        if old_exp is not None:
-            diff = exp - old_exp
-            if diff != 0:
-                changes.append((name, old_exp, exp, diff))
-
-    changes.sort(key=lambda x: x[3], reverse=True)
-
+    """Compare datasets and generate comprehensive HTML report with intelligent multi-period changes"""
+    today_date = get_eastern_date()
+    
+    # Find best available historical data using intelligent fallback
+    # For 7-day: look 2-14 days back (more flexible for new installations)
+    seven_day_data, seven_day_date, seven_days_back = find_best_historical_data(2, 14)
+    # For 30-day: look 7-45 days back (will use best available older data)
+    thirty_day_data, thirty_day_date, thirty_days_back = find_best_historical_data(7, 45)
+    
+    # Get list of all available snapshots for summary
+    all_snapshots = get_all_available_snapshots()
+    
+    # Prepare comprehensive changes data
+    all_players = set(today_data.keys())
+    changes_data = []
+    
+    for name in all_players:
+        today_exp = today_data.get(name, 0)
+        yesterday_exp = yesterday_data.get(name, None)
+        seven_day_exp = seven_day_data.get(name, None)
+        thirty_day_exp = thirty_day_data.get(name, None)
+        
+        # Calculate changes
+        day_change = today_exp - yesterday_exp if yesterday_exp is not None else None
+        seven_day_change = today_exp - seven_day_exp if seven_day_exp is not None else None
+        thirty_day_change = today_exp - thirty_day_exp if thirty_day_exp is not None else None
+        
+        # Only include players with at least one valid comparison
+        if day_change is not None or seven_day_change is not None or thirty_day_change is not None:
+            changes_data.append({
+                'name': name,
+                'today': today_exp,
+                'yesterday': yesterday_exp,
+                'seven_days_ago': seven_day_exp,
+                'thirty_days_ago': thirty_day_exp,
+                'day_change': day_change,
+                'seven_day_change': seven_day_change,
+                'thirty_day_change': thirty_day_change
+            })
+    
+    # Sort by 1-day change (descending), then by 7-day change
+    changes_data.sort(key=lambda x: (x['day_change'] or 0, x['seven_day_change'] or 0), reverse=True)
+    
+    # Generate HTML
     html_content = f"""
     <html>
     <head>
         <meta charset="utf-8">
-        <title>Experience Changes</title>
+        <title>Dura Highscores Experience Changes</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }}
-            table {{ border-collapse: collapse; width: 100%; margin-top: 20px; }}
-            th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
-            th {{ background: #444; color: #fff; }}
-            tr:nth-child(even) {{ background: #eee; }}
-            .gain {{ color: green; font-weight: bold; }}
-            .loss {{ color: red; font-weight: bold; }}
+            .header {{ text-align: center; margin-bottom: 30px; }}
+            .summary {{ background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }}
+            table {{ border-collapse: collapse; width: 100%; margin-top: 20px; background: #fff; }}
+            th, td {{ border: 1px solid #ddd; padding: 10px; text-align: right; }}
+            th {{ background: #2c3e50; color: #fff; text-align: center; }}
+            .name {{ text-align: left !important; font-weight: bold; }}
+            tr:nth-child(even) {{ background: #f8f9fa; }}
+            .gain {{ color: #27ae60; font-weight: bold; }}
+            .loss {{ color: #e74c3c; font-weight: bold; }}
+            .neutral {{ color: #7f8c8d; }}
+            .na {{ color: #bdc3c7; font-style: italic; }}
+            .period-header {{ background: #34495e !important; }}
+            .snapshot-list {{ max-height: 150px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 4px; }}
         </style>
     </head>
     <body>
-        <h2>Experience Changes ({datetime.now().strftime("%Y-%m-%d")})</h2>
+        <div class="header">
+            <h1>🎮 Dura Online Highscores Tracker</h1>
+            <h2>Experience Changes - {today_date.strftime("%Y-%m-%d")}</h2>
+        </div>
+        
+        <div class="summary">
+            <h3>📊 Summary</h3>
+            <p><strong>Total Players Tracked:</strong> {len(changes_data):,}</p>
+            <p><strong>Available Snapshots:</strong> {len(all_snapshots)} files</p>
+            <div class="snapshot-list">
+                <strong>Recent snapshots:</strong> {', '.join(all_snapshots[:10])}
+                {f'... and {len(all_snapshots) - 10} more' if len(all_snapshots) > 10 else ''}
+            </div>
+            <br>
+            <p><strong>Historical Comparisons:</strong></p>
+            <ul>
+                <li><strong>7-day range:</strong> {'✅' if seven_day_data else '❌'} 
+                    {f'Using {seven_day_date} ({seven_days_back} days back, {len(seven_day_data):,} players)' if seven_day_date else 'No data available in 7-14 day range'}</li>
+                <li><strong>30-day range:</strong> {'✅' if thirty_day_data else '❌'} 
+                    {f'Using {thirty_day_date} ({thirty_days_back} days back, {len(thirty_day_data):,} players)' if thirty_day_date else 'No data available in 30-45 day range'}</li>
+            </ul>
+        </div>
+        
         <table>
-            <tr><th>Name</th><th>Yesterday</th><th>Today</th><th>Change</th></tr>
+            <tr>
+                <th rowspan="2" class="name">Player Name</th>
+                <th rowspan="2">Current Experience</th>
+                <th colspan="3" class="period-header">Experience Changes</th>
+            </tr>
+            <tr>
+                <th>1 Day</th>
+                <th>{seven_days_back if seven_days_back else '7'} Days</th>
+                <th>{thirty_days_back if thirty_days_back else '30'} Days</th>
+            </tr>
     """
-
-    for name, old, new, diff in changes:
-        cls = "gain" if diff > 0 else "loss"
-        html_content += f"<tr><td>{name}</td><td>{old:,}</td><td>{new:,}</td><td class='{cls}'>{diff:+,}</td></tr>"
-
+    
+    for player in changes_data:
+        name = player['name']
+        today = player['today']
+        
+        # Format changes with appropriate styling
+        def format_change(change):
+            if change is None:
+                return '<span class="na">N/A</span>'
+            elif change > 0:
+                return f'<span class="gain">+{change:,}</span>'
+            elif change < 0:
+                return f'<span class="loss">{change:,}</span>'
+            else:
+                return '<span class="neutral">0</span>'
+        
+        day_change_html = format_change(player['day_change'])
+        seven_day_change_html = format_change(player['seven_day_change'])
+        thirty_day_change_html = format_change(player['thirty_day_change'])
+        
+        html_content += f"""
+            <tr>
+                <td class="name">{name}</td>
+                <td>{today:,}</td>
+                <td>{day_change_html}</td>
+                <td>{seven_day_change_html}</td>
+                <td>{thirty_day_change_html}</td>
+            </tr>
+        """
+    
     html_content += """
         </table>
+        
+        <div style="margin-top: 30px; text-align: center; color: #7f8c8d; font-size: 12px;">
+            <p>🤖 Generated automatically by GitHub Actions | 📅 Updates daily at 10 AM EST</p>
+            <p>📈 Intelligent historical data lookup - uses best available data within range</p>
+            <p>🔗 <a href="https://github.com/darkswashed/dura-exp-change">View Source Code</a></p>
+        </div>
     </body>
     </html>
     """
