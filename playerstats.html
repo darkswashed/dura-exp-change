@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Stats Visualization</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #chartContainer { width: 80%; margin: auto; }
+        canvas { background: #f4f4f4; }
+    </style>
+</head>
+<body>
+    <h1>Player Stats Visualization</h1>
+    <input type="text" id="playerName" placeholder="Enter Player's Name">
+    <button onclick="fetchPlayerStats()">View Stats</button>
+    
+    <div id="chartContainer">
+        <canvas id="playerStatsChart"></canvas>
+    </div>
+
+    <script>
+        async function fetchPlayerStats() {
+            const playerName = document.getElementById('playerName').value;
+            // Replace with actual API call to fetch data based on playerName
+            const data = await getPlayerData(playerName); // Placeholder function
+            
+            const ctx = document.getElementById('playerStatsChart').getContext('2d');
+            const playerStatsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [{
+                        label: 'Experience Over Time',
+                        data: data.experience,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Experience'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function getPlayerData(playerName) {
+            // Placeholder: Replace with actual logic to fetch player data
+            return {
+                dates: ['2023-01-01', '2023-01-02', '2023-01-03'], // Example dates
+                experience: [100, 200, 300] // Example experience data
+            };
+        }
+    </script>
+</body>
+</html>
