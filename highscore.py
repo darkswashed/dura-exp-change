@@ -8,7 +8,35 @@ import pytz
 from bs4 import BeautifulSoup
 
 BASE_URL_FIRST = "https://classic.dura-online.com/?highscores/experience"
-BASE_URL_PAGED = "https://classic.dura-online.com/?highscores/experience/{}"
+BASE_URL_PAGED = "https://classic.dura-o    # Calculate statistics
+    common_players = set(today_data.keys()) & set(yesterday_data.keys())
+    changes_count = sum(1 for name in common_players if today_data[name] != yesterday_data[name])
+    
+    # Load historical data for additional stats
+    seven_days_ago = (get_eastern_date() - timedelta(days=7)).strftime("%Y-%m-%d")
+    thirty_days_ago = (get_eastern_date() - timedelta(days=30)).strftime("%Y-%m-%d")
+    seven_day_data = load_historical_data(seven_days_ago)
+    thirty_day_data = load_historical_data(thirty_days_ago)
+    
+    print(f"Players present in both snapshots: {len(common_players)}")
+    print(f"Players with 1-day changes: {changes_count}")
+    print(f"Historical data available:")
+    print(f"  - 7-day ({seven_days_ago}): {len(seven_day_data):,} players")
+    print(f"  - 30-day ({thirty_days_ago}): {len(thirty_day_data):,} players")
+    
+    # Commit and push to git
+    commit_message = f"Update index.html {today_date}"
+    git_success = git_commit_push(report_file, commit_message)
+    
+    # Print completion status
+    if git_success:
+        print(f"✅ Successfully processed multi-period comparison for {today_date}")
+        print(f"📊 Players analyzed: {len(common_players):,}")
+        print(f"📈 1-day changes: {changes_count:,}")
+        print(f"📅 7-day data: {'Available' if seven_day_data else 'Not available'}")
+        print(f"📅 30-day data: {'Available' if thirty_day_data else 'Not available'}")
+    else:
+        print(f"⚠️ Comparison completed but git operations may have failed")res/experience/{}"
 SAVE_DIR = "snapshots"
 
 def get_eastern_date():
@@ -77,45 +105,143 @@ def load_csv(filepath):
             data[row["Name"]] = int(row["Experience"].replace(",", ""))
     return data
 
+def load_historical_data(target_date):
+    """Load historical data for a specific date"""
+    filepath = os.path.join(SAVE_DIR, f"highscores_{target_date}.csv")
+    if os.path.exists(filepath):
+        return load_csv(filepath)
+    return {}
+
 def compare_and_generate_html(today_data, yesterday_data, output_file):
-    """Compare two datasets and generate HTML report"""
-    changes = []
-    for name, exp in today_data.items():
-        old_exp = yesterday_data.get(name, None)
-        if old_exp is not None:
-            diff = exp - old_exp
-            if diff != 0:
-                changes.append((name, old_exp, exp, diff))
-
-    changes.sort(key=lambda x: x[3], reverse=True)
-
+    """Compare datasets and generate comprehensive HTML report with 1-day, 7-day, and 30-day changes"""
+    today_date = get_eastern_date()
+    
+    # Calculate dates for 7-day and 30-day comparisons
+    seven_days_ago = (today_date - timedelta(days=7)).strftime("%Y-%m-%d")
+    thirty_days_ago = (today_date - timedelta(days=30)).strftime("%Y-%m-%d")
+    
+    # Load historical data
+    seven_day_data = load_historical_data(seven_days_ago)
+    thirty_day_data = load_historical_data(thirty_days_ago)
+    
+    # Prepare comprehensive changes data
+    all_players = set(today_data.keys())
+    changes_data = []
+    
+    for name in all_players:
+        today_exp = today_data.get(name, 0)
+        yesterday_exp = yesterday_data.get(name, None)
+        seven_day_exp = seven_day_data.get(name, None)
+        thirty_day_exp = thirty_day_data.get(name, None)
+        
+        # Calculate changes
+        day_change = today_exp - yesterday_exp if yesterday_exp is not None else None
+        seven_day_change = today_exp - seven_day_exp if seven_day_exp is not None else None
+        thirty_day_change = today_exp - thirty_day_exp if thirty_day_exp is not None else None
+        
+        # Only include players with at least one valid comparison
+        if day_change is not None or seven_day_change is not None or thirty_day_change is not None:
+            changes_data.append({
+                'name': name,
+                'today': today_exp,
+                'yesterday': yesterday_exp,
+                'seven_days_ago': seven_day_exp,
+                'thirty_days_ago': thirty_day_exp,
+                'day_change': day_change,
+                'seven_day_change': seven_day_change,
+                'thirty_day_change': thirty_day_change
+            })
+    
+    # Sort by 1-day change (descending), then by 7-day change
+    changes_data.sort(key=lambda x: (x['day_change'] or 0, x['seven_day_change'] or 0), reverse=True)
+    
+    # Generate HTML
     html_content = f"""
     <html>
     <head>
         <meta charset="utf-8">
-        <title>Experience Changes</title>
+        <title>Dura Highscores Experience Changes</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }}
-            table {{ border-collapse: collapse; width: 100%; margin-top: 20px; }}
-            th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
-            th {{ background: #444; color: #fff; }}
-            tr:nth-child(even) {{ background: #eee; }}
-            .gain {{ color: green; font-weight: bold; }}
-            .loss {{ color: red; font-weight: bold; }}
+            .header {{ text-align: center; margin-bottom: 30px; }}
+            .summary {{ background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }}
+            table {{ border-collapse: collapse; width: 100%; margin-top: 20px; background: #fff; }}
+            th, td {{ border: 1px solid #ddd; padding: 10px; text-align: right; }}
+            th {{ background: #2c3e50; color: #fff; text-align: center; }}
+            .name {{ text-align: left !important; font-weight: bold; }}
+            tr:nth-child(even) {{ background: #f8f9fa; }}
+            .gain {{ color: #27ae60; font-weight: bold; }}
+            .loss {{ color: #e74c3c; font-weight: bold; }}
+            .neutral {{ color: #7f8c8d; }}
+            .na {{ color: #bdc3c7; font-style: italic; }}
+            .period-header {{ background: #34495e !important; }}
         </style>
     </head>
     <body>
-        <h2>Experience Changes ({get_eastern_date().strftime("%Y-%m-%d")})</h2>
+        <div class="header">
+            <h1>🎮 Dura Online Highscores Tracker</h1>
+            <h2>Experience Changes - {today_date.strftime("%Y-%m-%d")}</h2>
+        </div>
+        
+        <div class="summary">
+            <h3>📊 Summary</h3>
+            <p><strong>Total Players Tracked:</strong> {len(changes_data):,}</p>
+            <p><strong>Historical Data Available:</strong></p>
+            <ul>
+                <li>7-day comparison ({seven_days_ago}): {'✅' if seven_day_data else '❌'} ({len(seven_day_data):,} players)</li>
+                <li>30-day comparison ({thirty_days_ago}): {'✅' if thirty_day_data else '❌'} ({len(thirty_day_data):,} players)</li>
+            </ul>
+        </div>
+        
         <table>
-            <tr><th>Name</th><th>Yesterday</th><th>Today</th><th>Change</th></tr>
+            <tr>
+                <th rowspan="2" class="name">Player Name</th>
+                <th rowspan="2">Current Experience</th>
+                <th colspan="3" class="period-header">Experience Changes</th>
+            </tr>
+            <tr>
+                <th>1 Day</th>
+                <th>7 Days</th>
+                <th>30 Days</th>
+            </tr>
     """
-
-    for name, old, new, diff in changes:
-        cls = "gain" if diff > 0 else "loss"
-        html_content += f"<tr><td>{name}</td><td>{old:,}</td><td>{new:,}</td><td class='{cls}'>{diff:+,}</td></tr>"
-
+    
+    for player in changes_data:
+        name = player['name']
+        today = player['today']
+        
+        # Format changes with appropriate styling
+        def format_change(change):
+            if change is None:
+                return '<span class="na">N/A</span>'
+            elif change > 0:
+                return f'<span class="gain">+{change:,}</span>'
+            elif change < 0:
+                return f'<span class="loss">{change:,}</span>'
+            else:
+                return '<span class="neutral">0</span>'
+        
+        day_change_html = format_change(player['day_change'])
+        seven_day_change_html = format_change(player['seven_day_change'])
+        thirty_day_change_html = format_change(player['thirty_day_change'])
+        
+        html_content += f"""
+            <tr>
+                <td class="name">{name}</td>
+                <td>{today:,}</td>
+                <td>{day_change_html}</td>
+                <td>{seven_day_change_html}</td>
+                <td>{thirty_day_change_html}</td>
+            </tr>
+        """
+    
     html_content += """
         </table>
+        
+        <div style="margin-top: 30px; text-align: center; color: #7f8c8d; font-size: 12px;">
+            <p>🤖 Generated automatically by GitHub Actions | 📅 Updates daily at 10 AM EST</p>
+            <p>🔗 <a href="https://github.com/darkswashed/dura-exp-change">View Source Code</a></p>
+        </div>
     </body>
     </html>
     """
@@ -242,17 +368,26 @@ if __name__ == "__main__":
 
         git_success = git_commit_push(report_file, commit_message=f"Update index.html {get_eastern_date().strftime('%Y-%m-%d')}")
         
-        # Print completion status for full scrape
+        # Print completion status for full scrape with enhanced statistics
         common_players = set(today_dict.keys()) & set(yesterday_dict.keys())
         changes_count = sum(1 for name in common_players if today_dict[name] != yesterday_dict[name])
+        
+        # Load historical data for additional stats
+        seven_days_ago = (get_eastern_date() - timedelta(days=7)).strftime("%Y-%m-%d")
+        thirty_days_ago = (get_eastern_date() - timedelta(days=30)).strftime("%Y-%m-%d")
+        seven_day_data = load_historical_data(seven_days_ago)
+        thirty_day_data = load_historical_data(thirty_days_ago)
         
         print(f"🎆 Dura Highscores Full Scrape Complete!")
         print(f"📅 Date: {today_str}")
         print(f"🔍 Scraped: {len(rows):,} players")
-        print(f"👥 Compared: {len(common_players):,} players")
-        print(f"📈 Changes detected: {changes_count:,}")
+        print(f"👥 1-day comparison: {len(common_players):,} players")
+        print(f"📈 1-day changes: {changes_count:,}")
+        print(f"📅 Historical data:")
+        print(f"    7-day ({seven_days_ago}): {len(seven_day_data):,} players")
+        print(f"    30-day ({thirty_days_ago}): {len(thirty_day_data):,} players")
         print(f"💾 CSV saved: {today_file}")
-        print(f"📝 HTML report saved: {report_file}")
+        print(f"📝 Enhanced HTML report saved: {report_file}")
         
         if git_success:
             print("✅ All operations completed successfully!")
