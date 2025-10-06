@@ -652,23 +652,26 @@
                 console.log(`Creating chart for ${playerName} with ${data.length} data points:`);
                 console.log('Data points:', data.map(d => `${d.date}: ${d.experience}`));
                 
-                // Calculate daily gains/losses
-                const labels = [];
+                // Create daily changes chart with ALL data points
+                const labels = data.map(d => d.date);
                 const dailyChanges = [];
                 
+                // First day starts with 0 change (baseline)
+                dailyChanges.push(0);
+                
+                // Calculate daily changes for remaining days
                 for (let i = 1; i < data.length; i++) {
                     const currentExp = data[i].experience;
                     const previousExp = data[i - 1].experience;
                     const change = currentExp - previousExp;
-                    
-                    labels.push(data[i].date);
                     dailyChanges.push(change);
                 }
                 
-                console.log(`Chart will show ${dailyChanges.length} daily changes:`, dailyChanges.map((change, i) => `${labels[i]}: ${change >= 0 ? '+' : ''}${change}`));
+                console.log(`Chart will show ALL ${data.length} data points with daily changes:`, dailyChanges.map((change, i) => `${labels[i]}: ${change >= 0 ? '+' : ''}${change.toLocaleString()}`));
                 
-                // Dynamic colors based on positive/negative changes
+                // Color points based on daily changes
                 const pointColors = dailyChanges.map(change => {
+                    if (change === 0) return '#007bff'; // Blue for baseline (first day)
                     if (change > 0) return '#28a745'; // Green for gains
                     if (change < 0) return '#dc3545'; // Red for losses
                     return '#6c757d'; // Gray for no change
@@ -699,7 +702,7 @@
                         plugins: {
                             title: {
                                 display: true,
-                                text: `${playerName} - Daily Experience Changes`,
+                                text: `${playerName} - Daily Experience Changes (${data.length} snapshots)`,
                                 font: {
                                     size: 16
                                 }
@@ -711,13 +714,29 @@
                                 callbacks: {
                                     label: function(context) {
                                         const value = context.parsed.y;
+                                        const dataIndex = context.dataIndex;
+                                        
+                                        if (dataIndex === 0) {
+                                            return 'Baseline (first snapshot)';
+                                        }
+                                        
                                         const sign = value >= 0 ? '+' : '';
                                         return `Daily Change: ${sign}${value.toLocaleString()}`;
                                     },
                                     afterLabel: function(context) {
                                         const dataIndex = context.dataIndex;
-                                        const totalExp = data[dataIndex + 1].experience;
-                                        return `Total Experience: ${totalExp.toLocaleString()}`;
+                                        const totalExp = data[dataIndex].experience;
+                                        
+                                        if (dataIndex === 0) {
+                                            return `Total Experience: ${totalExp.toLocaleString()}`;
+                                        }
+                                        
+                                        const fromDate = data[dataIndex - 1].date;
+                                        const toDate = data[dataIndex].date;
+                                        return [
+                                            `Total Experience: ${totalExp.toLocaleString()}`,
+                                            `Change from ${fromDate} to ${toDate}`
+                                        ];
                                     }
                                 }
                             }
