@@ -436,12 +436,18 @@
                     return;
                 }
                 
+                // Calculate daily changes
+                const dailyChanges = [];
+                for (let i = 1; i < data.length; i++) {
+                    dailyChanges.push(data[i].experience - data[i - 1].experience);
+                }
+                
                 const latestExp = data[data.length - 1].experience;
-                const oldestExp = data[0].experience;
-                const totalGain = latestExp - oldestExp;
+                const totalGain = data[data.length - 1].experience - data[0].experience;
                 const avgDailyGain = totalGain / (data.length - 1);
-                const maxExp = Math.max(...data.map(d => d.experience));
-                const minExp = Math.min(...data.map(d => d.experience));
+                const maxDailyGain = Math.max(...dailyChanges);
+                const minDailyChange = Math.min(...dailyChanges);
+                const positiveDays = dailyChanges.filter(change => change > 0).length;
                 
                 statsContainer.innerHTML = `
                     <div class="stat-card">
@@ -449,16 +455,24 @@
                         <div class="stat-label">Current Experience</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">${totalGain.toLocaleString()}</div>
-                        <div class="stat-label">Total Gain</div>
+                        <div class="stat-value">${totalGain >= 0 ? '+' : ''}${totalGain.toLocaleString()}</div>
+                        <div class="stat-label">Total Change</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">${Math.round(avgDailyGain).toLocaleString()}</div>
-                        <div class="stat-label">Avg Daily Gain</div>
+                        <div class="stat-value">${avgDailyGain >= 0 ? '+' : ''}${Math.round(avgDailyGain).toLocaleString()}</div>
+                        <div class="stat-label">Avg Daily Change</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">${maxExp.toLocaleString()}</div>
-                        <div class="stat-label">Peak Experience</div>
+                        <div class="stat-value">+${maxDailyGain.toLocaleString()}</div>
+                        <div class="stat-label">Best Day</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${minDailyChange >= 0 ? '+' : ''}${minDailyChange.toLocaleString()}</div>
+                        <div class="stat-label">Worst Day</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${positiveDays}/${dailyChanges.length}</div>
+                        <div class="stat-label">Positive Days</div>
                     </div>
                 `;
                 
@@ -473,22 +487,39 @@
                     this.chart.destroy();
                 }
                 
-                const labels = data.map(d => d.date);
-                const experiences = data.map(d => d.experience);
+                // Calculate daily gains/losses
+                const labels = [];
+                const dailyChanges = [];
+                
+                for (let i = 1; i < data.length; i++) {
+                    const currentExp = data[i].experience;
+                    const previousExp = data[i - 1].experience;
+                    const change = currentExp - previousExp;
+                    
+                    labels.push(data[i].date);
+                    dailyChanges.push(change);
+                }
+                
+                // Dynamic colors based on positive/negative changes
+                const pointColors = dailyChanges.map(change => {
+                    if (change > 0) return '#28a745'; // Green for gains
+                    if (change < 0) return '#dc3545'; // Red for losses
+                    return '#6c757d'; // Gray for no change
+                });
                 
                 this.chart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: `${playerName} Experience`,
-                            data: experiences,
+                            label: `${playerName} Daily Change`,
+                            data: dailyChanges,
                             borderColor: '#007bff',
                             backgroundColor: 'rgba(0, 123, 255, 0.1)',
                             borderWidth: 3,
                             fill: true,
                             tension: 0.1,
-                            pointBackgroundColor: '#007bff',
+                            pointBackgroundColor: pointColors,
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
                             pointRadius: 6,
@@ -501,13 +532,27 @@
                         plugins: {
                             title: {
                                 display: true,
-                                text: `${playerName} - Experience History`,
+                                text: `${playerName} - Daily Experience Changes`,
                                 font: {
                                     size: 16
                                 }
                             },
                             legend: {
                                 display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.parsed.y;
+                                        const sign = value >= 0 ? '+' : '';
+                                        return `Daily Change: ${sign}${value.toLocaleString()}`;
+                                    },
+                                    afterLabel: function(context) {
+                                        const dataIndex = context.dataIndex;
+                                        const totalExp = data[dataIndex + 1].experience;
+                                        return `Total Experience: ${totalExp.toLocaleString()}`;
+                                    }
+                                }
                             }
                         },
                         scales: {
@@ -524,31 +569,25 @@
                             y: {
                                 title: {
                                     display: true,
-                                    text: 'Experience Points'
+                                    text: 'Experience Change'
                                 },
                                 ticks: {
                                     callback: function(value) {
-                                        return value.toLocaleString();
+                                        const sign = value >= 0 ? '+' : '';
+                                        return sign + value.toLocaleString();
                                     }
                                 },
                                 grid: {
                                     display: true,
                                     color: 'rgba(0,0,0,0.1)'
-                                }
+                                },
+                                // Add a horizontal line at y=0
+                                beginAtZero: true
                             }
                         },
                         interaction: {
                             intersect: false,
                             mode: 'index'
-                        },
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return `Experience: ${context.parsed.y.toLocaleString()}`;
-                                    }
-                                }
-                            }
                         }
                     }
                 });
