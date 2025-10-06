@@ -219,8 +219,13 @@
                     const loadingMessage = document.getElementById('loadingMessage');
                     loadingMessage.textContent = 'Discovering CSV files...';
                     
-                    // Discover available CSV files by trying recent dates
+                    // Use multiple discovery methods to find all available files
                     await this.discoverCSVFiles();
+                    
+                    if (this.csvFiles.length === 0) {
+                        // If no files found, try a fallback list of known recent files
+                        await this.tryFallbackFiles();
+                    }
                     
                     if (this.csvFiles.length === 0) {
                         this.showError('No CSV files found in snapshots directory.');
@@ -239,35 +244,51 @@
                 const availableFiles = [];
                 const today = new Date();
                 
-                // Check for files going back 60 days from today
-                for (let i = 0; i < 60; i++) {
+                console.log('Discovering all available CSV files...');
+                
+                // Smart discovery approach:
+                // 1. Check recent dates more thoroughly
+                // 2. Use adaptive searching to find the range of available data
+                
+                let foundFirst = null;
+                let foundLast = null;
+                
+                // First, scan recent history to get a sense of what's available
+                for (let i = 0; i <= 365; i++) { // Check up to a year back
                     const checkDate = new Date(today);
                     checkDate.setDate(today.getDate() - i);
-                    
-                    const dateString = checkDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+                    const dateString = checkDate.toISOString().split('T')[0];
                     const filename = `snapshots/highscores_${dateString}.csv`;
                     
                     try {
-                        // Try to fetch the file to see if it exists
                         const response = await fetch(filename, { method: 'HEAD' });
                         if (response.ok) {
                             availableFiles.push(filename);
+                            if (!foundFirst) foundFirst = dateString;
+                            foundLast = dateString;
                         }
                     } catch (error) {
-                        // File doesn't exist, continue checking other dates
-                        continue;
+                        // File doesn't exist, continue
+                    }
+                    
+                    // Update progress every 30 days
+                    if (i % 30 === 0 && i > 0) {
+                        console.log(`Scanned ${i} days back, found ${availableFiles.length} files so far...`);
                     }
                 }
                 
-                // Sort files by date (newest first)
+                console.log(`Found date range: ${foundLast} to ${foundFirst}`);
+                console.log(`Total files discovered: ${availableFiles.length}`);
+                
+                // Sort files by date (oldest first for proper chronological order)
                 availableFiles.sort((a, b) => {
                     const dateA = this.extractDateFromFilename(a);
                     const dateB = this.extractDateFromFilename(b);
-                    return dateB.localeCompare(dateA);
+                    return dateA.localeCompare(dateB);
                 });
                 
                 this.csvFiles = availableFiles;
-                console.log(`Discovered ${availableFiles.length} CSV files:`, availableFiles);
+                console.log(`Final sorted list of ${availableFiles.length} CSV files:`, availableFiles.map(f => this.extractDateFromFilename(f)));
             }
 
             async loadAllCSVFiles() {
@@ -295,6 +316,39 @@
             extractDateFromFilename(filename) {
                 const match = filename.match(/(\d{4}-\d{2}-\d{2})/);
                 return match ? match[1] : filename;
+            }
+            
+            async tryFallbackFiles() {
+                // Try some known patterns and recent dates as fallback
+                const fallbackFiles = [];
+                const today = new Date();
+                
+                // Check last 30 days more aggressively
+                for (let i = 0; i < 30; i++) {
+                    const checkDate = new Date(today);
+                    checkDate.setDate(today.getDate() - i);
+                    const dateString = checkDate.toISOString().split('T')[0];
+                    const filename = `snapshots/highscores_${dateString}.csv`;
+                    
+                    try {
+                        const response = await fetch(filename, { method: 'HEAD' });
+                        if (response.ok) {
+                            fallbackFiles.push(filename);
+                        }
+                    } catch (error) {
+                        // Continue checking
+                    }
+                }
+                
+                // Sort by date (oldest first)
+                fallbackFiles.sort((a, b) => {
+                    const dateA = this.extractDateFromFilename(a);
+                    const dateB = this.extractDateFromFilename(b);
+                    return dateA.localeCompare(dateB);
+                });
+                
+                this.csvFiles = fallbackFiles;
+                console.log(`Fallback discovery found ${fallbackFiles.length} files:`, fallbackFiles);
             }
             
             checkURLParameter() {
