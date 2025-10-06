@@ -386,7 +386,7 @@
                 }
                 
                 this.showPlayerInfo(playerName, playerData);
-                this.showPlayerStats(playerData);
+                this.showPlayerStats(playerName, playerData);
                 this.createChart(playerName, playerData);
             }
             
@@ -428,10 +428,52 @@
                 playerInfo.style.display = 'block';
             }
             
-            showPlayerStats(data) {
+            calculatePlayerPosition(date, playerName) {
+                const playersOnDate = this.csvData.get(date);
+                if (!playersOnDate) {
+                    return { position: '?', positionChange: null };
+                }
+                
+                // Convert to array and sort by experience (highest first)
+                const sortedPlayers = Array.from(playersOnDate.entries())
+                    .sort((a, b) => b[1] - a[1]);
+                
+                // Find current position
+                const currentPosition = sortedPlayers.findIndex(([name]) => 
+                    name === playerName
+                ) + 1;
+                
+                // Calculate position change (compare with previous day if available)
+                let positionChange = null;
+                const sortedDates = Array.from(this.csvData.keys()).sort();
+                const currentDateIndex = sortedDates.indexOf(date);
+                
+                if (currentDateIndex > 0) {
+                    const previousDate = sortedDates[currentDateIndex - 1];
+                    const previousDayPlayers = this.csvData.get(previousDate);
+                    
+                    if (previousDayPlayers && previousDayPlayers.has(playerName)) {
+                        const previousDaySorted = Array.from(previousDayPlayers.entries())
+                            .sort((a, b) => b[1] - a[1]);
+                        
+                        const previousPosition = previousDaySorted.findIndex(([name]) => 
+                            name === playerName
+                        ) + 1;
+                        
+                        positionChange = currentPosition - previousPosition;
+                    }
+                }
+                
+                return { 
+                    position: currentPosition || '?', 
+                    positionChange 
+                };
+            }
+
+            showPlayerStats(playerName, data) {
                 const statsContainer = document.getElementById('playerStats');
                 
-                if (data.length < 2) {
+                if (data.length < 1) {
                     statsContainer.style.display = 'none';
                     return;
                 }
@@ -442,12 +484,47 @@
                     dailyChanges.push(data[i].experience - data[i - 1].experience);
                 }
                 
-                const latestExp = data[data.length - 1].experience;
-                const totalGain = data[data.length - 1].experience - data[0].experience;
-                const avgDailyGain = totalGain / (data.length - 1);
-                const maxDailyGain = Math.max(...dailyChanges);
-                const minDailyChange = Math.min(...dailyChanges);
-                const positiveDays = dailyChanges.filter(change => change > 0).length;
+                const latestData = data[data.length - 1];
+                const latestExp = latestData.experience;
+                
+                // Calculate period changes with fallback to available data
+                const oneDayChange = data.length >= 2 ? data[data.length - 1].experience - data[data.length - 2].experience : 0;
+                
+                // For 7-day change: use up to 7 days back, or furthest available
+                let sevenDayChange = null;
+                if (data.length >= 2) {
+                    const daysBack = Math.min(7, data.length - 1);
+                    const targetIndex = data.length - 1 - daysBack;
+                    sevenDayChange = data[data.length - 1].experience - data[targetIndex].experience;
+                }
+                
+                // For 30-day change: use up to 30 days back, or furthest available
+                let thirtyDayChange = null;
+                if (data.length >= 2) {
+                    const daysBack = Math.min(30, data.length - 1);
+                    const targetIndex = data.length - 1 - daysBack;
+                    thirtyDayChange = data[data.length - 1].experience - data[targetIndex].experience;
+                }
+                
+                // Calculate best and worst days
+                const maxDailyGain = dailyChanges.length > 0 ? Math.max(...dailyChanges) : 0;
+                const minDailyChange = dailyChanges.length > 0 ? Math.min(...dailyChanges) : 0;
+                
+                // Calculate position and position change
+                const { position, positionChange } = this.calculatePlayerPosition(latestData.date, playerName);
+                
+                // Format change values
+                const formatChange = (change) => {
+                    if (change === null) return 'No Data';
+                    return (change >= 0 ? '+' : '') + change.toLocaleString();
+                };
+                
+                // Format position change
+                const formatPositionChange = (change) => {
+                    if (change === null || change === 0) return '';
+                    if (change > 0) return ` (↓${change})`;  // Moved down in rank (worse)
+                    return ` (↑${Math.abs(change)})`;  // Moved up in rank (better)
+                };
                 
                 statsContainer.innerHTML = `
                     <div class="stat-card">
@@ -455,24 +532,28 @@
                         <div class="stat-label">Current Experience</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">${totalGain >= 0 ? '+' : ''}${totalGain.toLocaleString()}</div>
-                        <div class="stat-label">Total Change</div>
+                        <div class="stat-value">${formatChange(oneDayChange)}</div>
+                        <div class="stat-label">1 Day Change</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">${avgDailyGain >= 0 ? '+' : ''}${Math.round(avgDailyGain).toLocaleString()}</div>
-                        <div class="stat-label">Avg Daily Change</div>
+                        <div class="stat-value">${formatChange(sevenDayChange)}</div>
+                        <div class="stat-label">7 Day Change</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${formatChange(thirtyDayChange)}</div>
+                        <div class="stat-label">30 Day Change</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value">+${maxDailyGain.toLocaleString()}</div>
                         <div class="stat-label">Best Day</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">${minDailyChange >= 0 ? '+' : ''}${minDailyChange.toLocaleString()}</div>
+                        <div class="stat-value">${formatChange(minDailyChange)}</div>
                         <div class="stat-label">Worst Day</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value">${positiveDays}/${dailyChanges.length}</div>
-                        <div class="stat-label">Positive Days</div>
+                        <div class="stat-value">#${position}${formatPositionChange(positionChange)}</div>
+                        <div class="stat-label">Position</div>
                     </div>
                 `;
                 
