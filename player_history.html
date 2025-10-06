@@ -217,15 +217,10 @@
             async discoverAndLoadCSVFiles() {
                 try {
                     const loadingMessage = document.getElementById('loadingMessage');
-                    loadingMessage.textContent = 'Discovering CSV files...';
+                    loadingMessage.textContent = 'Loading snapshots directory...';
                     
-                    // Use multiple discovery methods to find all available files
-                    await this.discoverCSVFiles();
-                    
-                    if (this.csvFiles.length === 0) {
-                        // If no files found, try a fallback list of known recent files
-                        await this.tryFallbackFiles();
-                    }
+                    // Get all CSV files from the snapshots directory
+                    await this.loadAllSnapshotFiles();
                     
                     if (this.csvFiles.length === 0) {
                         this.showError('No CSV files found in snapshots directory.');
@@ -236,59 +231,95 @@
                     await this.loadAllCSVFiles();
                     
                 } catch (error) {
-                    this.showError(`Error discovering CSV files: ${error.message}`);
+                    this.showError(`Error loading CSV files: ${error.message}`);
                 }
             }
             
-            async discoverCSVFiles() {
+            async loadAllSnapshotFiles() {
                 const availableFiles = [];
-                const today = new Date();
                 
-                console.log('Discovering all available CSV files...');
+                console.log('Loading all files from snapshots directory...');
                 
-                // Smart discovery approach:
-                // 1. Check recent dates more thoroughly
-                // 2. Use adaptive searching to find the range of available data
-                
-                let foundFirst = null;
-                let foundLast = null;
-                
-                // First, scan recent history to get a sense of what's available
-                for (let i = 0; i <= 365; i++) { // Check up to a year back
-                    const checkDate = new Date(today);
-                    checkDate.setDate(today.getDate() - i);
-                    const dateString = checkDate.toISOString().split('T')[0];
-                    const filename = `snapshots/highscores_${dateString}.csv`;
+                try {
+                    // Try to get directory listing
+                    const response = await fetch('snapshots/');
+                    if (response.ok) {
+                        const html = await response.text();
+                        console.log('Got directory listing, parsing...');
+                        
+                        // Parse the directory listing HTML to find CSV files
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        
+                        // Look for links that point to CSV files
+                        const links = doc.querySelectorAll('a');
+                        links.forEach(link => {
+                            const href = link.getAttribute('href');
+                            if (href && href.match(/highscores_\d{4}-\d{2}-\d{2}\.csv$/)) {
+                                availableFiles.push(`snapshots/${href}`);
+                            }
+                        });
+                        
+                        console.log('Found files from directory listing:', availableFiles);
+                    } else {
+                        throw new Error('Directory listing not available');
+                    }
+                } catch (error) {
+                    console.log('Directory listing failed, trying alternative method...');
                     
-                    try {
-                        const response = await fetch(filename, { method: 'HEAD' });
-                        if (response.ok) {
-                            availableFiles.push(filename);
-                            if (!foundFirst) foundFirst = dateString;
-                            foundLast = dateString;
+                    // Fallback: Try known file patterns based on current workspace
+                    // This is specifically for the known files in the workspace
+                    const knownDates = [
+                        '2025-10-02', '2025-10-03', '2025-10-04', 
+                        '2025-10-05', '2025-10-06'
+                    ];
+                    
+                    for (const date of knownDates) {
+                        const filename = `snapshots/highscores_${date}.csv`;
+                        try {
+                            const response = await fetch(filename, { method: 'HEAD' });
+                            if (response.ok) {
+                                availableFiles.push(filename);
+                                console.log(`Found file: ${filename}`);
+                            }
+                        } catch (e) {
+                            console.log(`File not found: ${filename}`);
                         }
-                    } catch (error) {
-                        // File doesn't exist, continue
                     }
                     
-                    // Update progress every 30 days
-                    if (i % 30 === 0 && i > 0) {
-                        console.log(`Scanned ${i} days back, found ${availableFiles.length} files so far...`);
+                    // Also check for today and recent days in case there are more
+                    const today = new Date();
+                    for (let i = 0; i < 10; i++) {
+                        const checkDate = new Date(today);
+                        checkDate.setDate(today.getDate() - i);
+                        const dateString = checkDate.toISOString().split('T')[0];
+                        const filename = `snapshots/highscores_${dateString}.csv`;
+                        
+                        if (!availableFiles.includes(filename)) {
+                            try {
+                                const response = await fetch(filename, { method: 'HEAD' });
+                                if (response.ok) {
+                                    availableFiles.push(filename);
+                                    console.log(`Found additional file: ${filename}`);
+                                }
+                            } catch (e) {
+                                // File doesn't exist
+                            }
+                        }
                     }
                 }
                 
-                console.log(`Found date range: ${foundLast} to ${foundFirst}`);
-                console.log(`Total files discovered: ${availableFiles.length}`);
-                
-                // Sort files by date (oldest first for proper chronological order)
-                availableFiles.sort((a, b) => {
+                // Remove duplicates and sort by date (oldest first)
+                const uniqueFiles = [...new Set(availableFiles)];
+                uniqueFiles.sort((a, b) => {
                     const dateA = this.extractDateFromFilename(a);
                     const dateB = this.extractDateFromFilename(b);
                     return dateA.localeCompare(dateB);
                 });
                 
-                this.csvFiles = availableFiles;
-                console.log(`Final sorted list of ${availableFiles.length} CSV files:`, availableFiles.map(f => this.extractDateFromFilename(f)));
+                this.csvFiles = uniqueFiles;
+                console.log(`Total unique CSV files found: ${this.csvFiles.length}`);
+                console.log('Files:', this.csvFiles.map(f => this.extractDateFromFilename(f)));
             }
 
             async loadAllCSVFiles() {
@@ -318,38 +349,7 @@
                 return match ? match[1] : filename;
             }
             
-            async tryFallbackFiles() {
-                // Try some known patterns and recent dates as fallback
-                const fallbackFiles = [];
-                const today = new Date();
-                
-                // Check last 30 days more aggressively
-                for (let i = 0; i < 30; i++) {
-                    const checkDate = new Date(today);
-                    checkDate.setDate(today.getDate() - i);
-                    const dateString = checkDate.toISOString().split('T')[0];
-                    const filename = `snapshots/highscores_${dateString}.csv`;
-                    
-                    try {
-                        const response = await fetch(filename, { method: 'HEAD' });
-                        if (response.ok) {
-                            fallbackFiles.push(filename);
-                        }
-                    } catch (error) {
-                        // Continue checking
-                    }
-                }
-                
-                // Sort by date (oldest first)
-                fallbackFiles.sort((a, b) => {
-                    const dateA = this.extractDateFromFilename(a);
-                    const dateB = this.extractDateFromFilename(b);
-                    return dateA.localeCompare(dateB);
-                });
-                
-                this.csvFiles = fallbackFiles;
-                console.log(`Fallback discovery found ${fallbackFiles.length} files:`, fallbackFiles);
-            }
+
             
             checkURLParameter() {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -649,6 +649,9 @@
                     this.chart.destroy();
                 }
                 
+                console.log(`Creating chart for ${playerName} with ${data.length} data points:`);
+                console.log('Data points:', data.map(d => `${d.date}: ${d.experience}`));
+                
                 // Calculate daily gains/losses
                 const labels = [];
                 const dailyChanges = [];
@@ -661,6 +664,8 @@
                     labels.push(data[i].date);
                     dailyChanges.push(change);
                 }
+                
+                console.log(`Chart will show ${dailyChanges.length} daily changes:`, dailyChanges.map((change, i) => `${labels[i]}: ${change >= 0 ? '+' : ''}${change}`));
                 
                 // Dynamic colors based on positive/negative changes
                 const pointColors = dailyChanges.map(change => {
