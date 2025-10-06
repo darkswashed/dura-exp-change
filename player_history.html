@@ -155,15 +155,10 @@
                 this.csvData = new Map(); // Map of date -> player data
                 this.allPlayers = new Set();
                 this.chart = null;
-                this.csvFiles = [
-                    'snapshots/highscores_2025-10-02.csv',
-                    'snapshots/highscores_2025-10-03.csv',
-                    'snapshots/highscores_2025-10-04.csv',
-                    'snapshots/highscores_2025-10-05.csv'
-                ];
+                this.csvFiles = []; // Will be populated dynamically
                 
                 this.initializeEventListeners();
-                this.loadAllCSVFiles(); // Auto-load on startup
+                this.discoverAndLoadCSVFiles(); // Auto-discover and load CSV files
             }
             
             initializeEventListeners() {
@@ -192,6 +187,62 @@
                 });
             }
             
+            async discoverAndLoadCSVFiles() {
+                try {
+                    const loadingMessage = document.getElementById('loadingMessage');
+                    loadingMessage.textContent = 'Discovering CSV files...';
+                    
+                    // Discover available CSV files by trying recent dates
+                    await this.discoverCSVFiles();
+                    
+                    if (this.csvFiles.length === 0) {
+                        this.showError('No CSV files found in snapshots directory.');
+                        return;
+                    }
+                    
+                    // Load all discovered files
+                    await this.loadAllCSVFiles();
+                    
+                } catch (error) {
+                    this.showError(`Error discovering CSV files: ${error.message}`);
+                }
+            }
+            
+            async discoverCSVFiles() {
+                const availableFiles = [];
+                const today = new Date();
+                
+                // Check for files going back 60 days from today
+                for (let i = 0; i < 60; i++) {
+                    const checkDate = new Date(today);
+                    checkDate.setDate(today.getDate() - i);
+                    
+                    const dateString = checkDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+                    const filename = `snapshots/highscores_${dateString}.csv`;
+                    
+                    try {
+                        // Try to fetch the file to see if it exists
+                        const response = await fetch(filename, { method: 'HEAD' });
+                        if (response.ok) {
+                            availableFiles.push(filename);
+                        }
+                    } catch (error) {
+                        // File doesn't exist, continue checking other dates
+                        continue;
+                    }
+                }
+                
+                // Sort files by date (newest first)
+                availableFiles.sort((a, b) => {
+                    const dateA = this.extractDateFromFilename(a);
+                    const dateB = this.extractDateFromFilename(b);
+                    return dateB.localeCompare(dateA);
+                });
+                
+                this.csvFiles = availableFiles;
+                console.log(`Discovered ${availableFiles.length} CSV files:`, availableFiles);
+            }
+
             async loadAllCSVFiles() {
                 try {
                     const loadingMessage = document.getElementById('loadingMessage');
