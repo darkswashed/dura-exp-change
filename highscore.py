@@ -221,10 +221,18 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
         <meta charset="utf-8">
         <title>Dura Highscores Experience Changes</title>
         <style>
-            body {{ font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }}
+            body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f6fa; }}
             .header {{ text-align: center; margin-bottom: 30px; }}
-            table {{ border-collapse: collapse; width: 100%; margin-top: 20px; background: #fff; }}
-            th, td {{ border: 1px solid #ddd; padding: 10px; text-align: right; }}
+            table {{ 
+                border-collapse: collapse; 
+                width: 100%; 
+                margin-top: 20px; 
+                background: #fff; 
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }}
+            th, td {{ border: 1px solid #e1e8ed; padding: 12px; text-align: right; }}
             th {{ 
                 background: #2c3e50; 
                 color: #fff; 
@@ -232,17 +240,34 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
                 position: sticky; 
                 top: 0; 
                 z-index: 10;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                font-weight: 600;
             }}
             .name {{ text-align: left !important; font-weight: bold; }}
-            .name a {{ color: #2c3e50; text-decoration: none; }}
-            .name a:hover {{ color: #3498db; text-decoration: underline; cursor: pointer; }}
+            .name a {{ 
+                color: #2980b9; 
+                text-decoration: underline; 
+                text-decoration-color: rgba(41, 128, 185, 0.3);
+                text-underline-offset: 2px;
+                transition: all 0.2s ease;
+                padding: 2px 4px;
+                border-radius: 3px;
+            }}
+            .name a:hover {{ 
+                color: #fff; 
+                background: #3498db; 
+                text-decoration: none;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+            }}
             tr:nth-child(even) {{ background: #f8f9fa; }}
+            tr:nth-child(odd) {{ background: #ffffff; }}
+            tr:hover {{ background: #e8f4fd; transition: background-color 0.2s ease; }}
             .gain {{ color: #27ae60; font-weight: bold; }}
             .loss {{ color: #e74c3c; font-weight: bold; }}
             .neutral {{ color: #7f8c8d; }}
             .na {{ color: #bdc3c7; font-style: italic; }}
-            .period-header {{ background: #34495e !important; position: sticky; top: 0; z-index: 10; }}
+            .period-header {{ background: #34495e !important; position: sticky; top: 0; z-index: 10; font-weight: 600; }}
         </style>
     </head>
     <body>
