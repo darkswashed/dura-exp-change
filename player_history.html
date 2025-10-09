@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Player Experience History</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <style>
         :root {
@@ -245,6 +247,230 @@
             margin-top: 5px;
             transition: color 0.3s ease;
         }
+
+        /* Achievement Styles */
+        .achievements-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .achievements-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .achievements-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .achievement-summary-card {
+            background: var(--bg-secondary);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .achievement-summary-card:hover {
+            border-color: var(--border-focus);
+        }
+
+        .achievement-summary-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .achievement-summary-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .achievements-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .achievement-tab {
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .achievement-tab:hover {
+            border-color: var(--border-focus);
+        }
+
+        .achievement-tab.active {
+            background: var(--border-focus);
+            color: white;
+            border-color: var(--border-focus);
+        }
+
+        .achievements-content {
+            min-height: 200px;
+        }
+
+        .achievement-category {
+            display: none;
+        }
+
+        .achievement-category.active {
+            display: block;
+        }
+
+        .achievement-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .achievement-card {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #95a5a6;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .achievement-card.earned {
+            border-left-color: #28a745;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+        }
+
+        .achievement-card.progress {
+            border-left-color: #17a2b8;
+        }
+
+        .achievement-card.rarity-common { border-left-color: #95a5a6; }
+        .achievement-card.rarity-uncommon { border-left-color: #3498db; }
+        .achievement-card.rarity-rare { border-left-color: #9b59b6; }
+        .achievement-card.rarity-epic { border-left-color: #e67e22; }
+        .achievement-card.rarity-legendary { border-left-color: #f1c40f; }
+        .achievement-card.rarity-mythic { border-left-color: #e74c3c; }
+
+        .achievement-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .achievement-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .achievement-badge {
+            font-size: 20px;
+            filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3));
+        }
+
+        .achievement-rarity {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .rarity-common { background: #95a5a6; color: white; }
+        .rarity-uncommon { background: #3498db; color: white; }
+        .rarity-rare { background: #9b59b6; color: white; }
+        .rarity-epic { background: #e67e22; color: white; }
+        .rarity-legendary { background: #f1c40f; color: black; }
+        .rarity-mythic { background: #e74c3c; color: white; }
+
+        .achievement-description {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .achievement-date {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .achievement-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .achievement-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #17a2b8, #007bff);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .achievement-progress-text {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .no-achievements {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .no-achievements-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .achievements-tabs {
+                justify-content: center;
+            }
+            
+            .achievement-tab {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+            
+            .achievement-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -270,6 +496,40 @@
         <div id="playerInfo" style="display: none;"></div>
         
         <div id="playerStats" class="stats" style="display: none;"></div>
+        
+        <div id="achievementsSection" class="achievements-section" style="display: none;">
+            <div class="achievements-header">
+                🏅 Player Achievements
+            </div>
+            
+            <div id="achievementsSummary" class="achievements-summary"></div>
+            
+            <div class="achievements-tabs">
+                <div class="achievement-tab active" data-category="all">
+                    🏆 All Achievements
+                </div>
+                <div class="achievement-tab" data-category="xpMilestones">
+                    📊 Experience
+                </div>
+                <div class="achievement-tab" data-category="dailyProgress">
+                    📈 Progress
+                </div>
+                <div class="achievement-tab" data-category="ranking">
+                    🏆 Ranking
+                </div>
+                <div class="achievement-tab" data-category="growthRate">
+                    🚀 Growth
+                </div>
+                <div class="achievement-tab" data-category="specialPatterns">
+                    🎯 Special
+                </div>
+                <div class="achievement-tab" data-category="comparative">
+                    👥 Competitive
+                </div>
+            </div>
+            
+            <div id="achievementsContent" class="achievements-content"></div>
+        </div>
         
         <div id="chartContainer" style="display: none;">
             <canvas id="experienceChart"></canvas>
@@ -312,6 +572,110 @@
 
         // Initialize theme on page load
         document.addEventListener('DOMContentLoaded', initializeTheme);
+
+        // Register Chart.js plugins
+        Chart.register(window['chartjs-plugin-annotation']);
+
+        // Achievement System
+        const ACHIEVEMENTS = {
+            xpMilestones: {
+                name: "Experience Milestones",
+                icon: "📊",
+                description: "Reach experience milestones",
+                levels: [
+                    {threshold: 1000000, name: "First Million", badge: "🥉", rarity: "Common"},
+                    {threshold: 5000000, name: "Five Million Club", badge: "🥉", rarity: "Common"},
+                    {threshold: 10000000, name: "Ten Million", badge: "🥈", rarity: "Uncommon"},
+                    {threshold: 25000000, name: "Quarter Century", badge: "🥈", rarity: "Uncommon"},
+                    {threshold: 50000000, name: "Half Century", badge: "🥈", rarity: "Uncommon"},
+                    {threshold: 100000000, name: "Hundred Million", badge: "🥇", rarity: "Rare"},
+                    {threshold: 250000000, name: "Quarter Billion", badge: "🥇", rarity: "Rare"},
+                    {threshold: 500000000, name: "Half Billion", badge: "🥇", rarity: "Rare"},
+                    {threshold: 1000000000, name: "Billionaire", badge: "💎", rarity: "Epic"},
+                    {threshold: 2500000000, name: "Epic Grinder", badge: "💎", rarity: "Epic"},
+                    {threshold: 5000000000, name: "Legendary", badge: "👑", rarity: "Legendary"}
+                ]
+            },
+            dailyProgress: {
+                name: "Daily Progress",
+                icon: "📈",
+                description: "Daily and weekly achievements",
+                achievements: [
+                    {id: "consistent_grinder", name: "Consistent Grinder", badge: "⚡", description: "7+ consecutive days of XP gains", rarity: "Uncommon"},
+                    {id: "weekend_warrior", name: "Weekend Warrior", badge: "🏖️", description: "Highest gains on weekends", rarity: "Common"},
+                    {id: "power_week", name: "Power Week", badge: "💪", description: "100M+ XP gained in 7 days", rarity: "Rare"},
+                    {id: "marathon_month", name: "Marathon Month", badge: "🏃", description: "500M+ XP gained in 30 days", rarity: "Epic"},
+                    {id: "perfect_week", name: "Perfect Week", badge: "✨", description: "XP gain every day for 7 days", rarity: "Rare"}
+                ]
+            },
+            ranking: {
+                name: "Ranking Achievements",
+                icon: "🏆",
+                description: "Leaderboard position achievements",
+                levels: [
+                    {threshold: 1000, name: "Top 1000", badge: "🏅", rarity: "Common", comparison: "<="},
+                    {threshold: 500, name: "Elite 500", badge: "🎖️", rarity: "Uncommon", comparison: "<="},
+                    {threshold: 100, name: "Top 100", badge: "🏆", rarity: "Rare", comparison: "<="},
+                    {threshold: 50, name: "Elite 50", badge: "👑", rarity: "Epic", comparison: "<="},
+                    {threshold: 10, name: "Top 10", badge: "⭐", rarity: "Legendary", comparison: "<="},
+                    {threshold: 1, name: "Champion", badge: "🌟", rarity: "Mythic", comparison: "<="}
+                ],
+                achievements: [
+                    {id: "climber_100", name: "Climber", badge: "🧗", description: "Improve rank by 100+ positions", rarity: "Common"},
+                    {id: "climber_500", name: "Mountain Climber", badge: "⛰️", description: "Improve rank by 500+ positions", rarity: "Uncommon"},
+                    {id: "climber_1000", name: "Peak Conqueror", badge: "🏔️", description: "Improve rank by 1000+ positions", rarity: "Rare"},
+                    {id: "steady_rise", name: "Steady Rise", badge: "📈", description: "Maintain upward trend for 7+ days", rarity: "Uncommon"}
+                ]
+            },
+            growthRate: {
+                name: "Growth Rate",
+                icon: "🚀",
+                description: "Experience growth achievements",
+                achievements: [
+                    {id: "speed_demon", name: "Speed Demon", badge: "💨", description: "50M+ XP in single day", rarity: "Rare"},
+                    {id: "explosive_growth", name: "Explosive Growth", badge: "💥", description: "100M+ XP in single day", rarity: "Epic"},
+                    {id: "mega_grind", name: "Mega Grind", badge: "🔥", description: "200M+ XP in single day", rarity: "Legendary"},
+                    {id: "acceleration", name: "Acceleration", badge: "⚡", description: "Increasing daily gains for 5+ days", rarity: "Uncommon"},
+                    {id: "efficiency_expert", name: "Efficiency Expert", badge: "⚙️", description: "Consistent 10M+ daily gains for 7+ days", rarity: "Rare"},
+                    {id: "late_bloomer", name: "Late Bloomer", badge: "🌱", description: "Biggest single-day improvement after 14+ days", rarity: "Common"}
+                ]
+            },
+            specialPatterns: {
+                name: "Special Patterns",
+                icon: "🎯",
+                description: "Unique pattern achievements",
+                achievements: [
+                    {id: "milestone_hunter", name: "Milestone Hunter", badge: "🎯", description: "Hit 3+ major milestones in 30 days", rarity: "Rare"},
+                    {id: "round_number_100m", name: "Perfect Hundred", badge: "💯", description: "Reach exactly 100,000,000 XP", rarity: "Uncommon"},
+                    {id: "round_number_500m", name: "Perfect Five Hundred", badge: "5️⃣", description: "Reach exactly 500,000,000 XP", rarity: "Rare"},
+                    {id: "round_number_1b", name: "Perfect Billion", badge: "🎰", description: "Reach exactly 1,000,000,000 XP", rarity: "Epic"},
+                    {id: "lucky_777", name: "Lucky 777", badge: "🍀", description: "XP ending in 777", rarity: "Common"},
+                    {id: "lucky_888", name: "Lucky 888", badge: "🎱", description: "XP ending in 888", rarity: "Common"},
+                    {id: "lucky_999", name: "Lucky 999", badge: "🎲", description: "XP ending in 999", rarity: "Common"},
+                    {id: "balanced_growth", name: "Balanced Growth", badge: "⚖️", description: "Maintain steady daily gains (±20%) for 7+ days", rarity: "Rare"}
+                ]
+            },
+            comparative: {
+                name: "Competitive",
+                icon: "👥", 
+                description: "Achievements based on comparison with others",
+                achievements: [
+                    {id: "giant_slayer", name: "Giant Slayer", badge: "⚔️", description: "Overtake someone 1000+ ranks above in single day", rarity: "Epic"},
+                    {id: "comeback_kid", name: "Comeback Kid", badge: "🔄", description: "Return to previous high rank after 7+ day decline", rarity: "Rare"},
+                    {id: "never_give_up", name: "Never Give Up", badge: "💪", description: "Continue gaining XP after rank drops", rarity: "Common"},
+                    {id: "steady_eddie", name: "Steady Eddie", badge: "🛡️", description: "Never drop more than 10% in experience over 14+ days", rarity: "Uncommon"}
+                ]
+            }
+        };
+
+        const RARITY_COLORS = {
+            "Common": "#95a5a6",
+            "Uncommon": "#3498db", 
+            "Rare": "#9b59b6",
+            "Epic": "#e67e22",
+            "Legendary": "#f1c40f",
+            "Mythic": "#e74c3c"
+        };
 
         class PlayerHistoryTracker {
             constructor() {
@@ -603,10 +967,668 @@
                     return;
                 }
                 
+                // Calculate achievements
+                const achievements = this.calculateAchievements(playerName, playerData);
+                
                 this.showPlayerInfo(playerName, playerData);
                 this.showPlayerStats(playerName, playerData);
+                this.showAchievements(playerName, achievements);
                 this.createChart(playerName, playerData);
                 this.createPositionChart(playerName, playerData);
+            }
+
+            calculateAchievements(playerName, playerData) {
+                const achievements = {
+                    earned: [],
+                    progress: []
+                };
+
+                // Calculate daily changes for analysis
+                const dailyChanges = [];
+                const positions = [];
+                for (let i = 0; i < playerData.length; i++) {
+                    if (i > 0) {
+                        dailyChanges.push({
+                            date: playerData[i].date,
+                            change: playerData[i].experience - playerData[i - 1].experience,
+                            experience: playerData[i].experience
+                        });
+                    }
+                    
+                    const { position } = this.calculatePlayerPosition(playerData[i].date, playerName);
+                    positions.push({
+                        date: playerData[i].date,
+                        position: position,
+                        experience: playerData[i].experience
+                    });
+                }
+
+                // 1. Experience Milestones
+                const currentXP = playerData[playerData.length - 1].experience;
+                ACHIEVEMENTS.xpMilestones.levels.forEach(milestone => {
+                    if (currentXP >= milestone.threshold) {
+                        const unlockedDate = this.findMilestoneUnlockDate(playerData, milestone.threshold);
+                        achievements.earned.push({
+                            ...milestone,
+                            category: "xpMilestones",
+                            unlockedDate: unlockedDate
+                        });
+                    } else {
+                        const progress = (currentXP / milestone.threshold) * 100;
+                        achievements.progress.push({
+                            ...milestone,
+                            category: "xpMilestones", 
+                            progress: Math.min(progress, 99.9),
+                            current: currentXP,
+                            target: milestone.threshold
+                        });
+                        return; // Only show progress for next milestone
+                    }
+                });
+
+                // 2. Daily Progress Achievements
+                achievements.earned.push(...this.checkDailyProgressAchievements(dailyChanges));
+
+                // 3. Ranking Achievements
+                const bestPosition = Math.min(...positions.filter(p => p.position !== '?').map(p => p.position));
+                ACHIEVEMENTS.ranking.levels.forEach(level => {
+                    if (bestPosition <= level.threshold) {
+                        const unlockedDate = this.findRankUnlockDate(positions, level.threshold);
+                        achievements.earned.push({
+                            ...level,
+                            category: "ranking",
+                            unlockedDate: unlockedDate
+                        });
+                    }
+                });
+                achievements.earned.push(...this.checkRankingAchievements(positions));
+
+                // 4. Growth Rate Achievements
+                achievements.earned.push(...this.checkGrowthRateAchievements(dailyChanges));
+
+                // 5. Special Pattern Achievements
+                achievements.earned.push(...this.checkSpecialPatternAchievements(playerData, dailyChanges));
+
+                // 6. Comparative Achievements
+                achievements.earned.push(...this.checkComparativeAchievements(playerName, positions, dailyChanges));
+
+                // Sort achievements by unlock date (most recent first)
+                achievements.earned.sort((a, b) => {
+                    if (!a.unlockedDate) return 1;
+                    if (!b.unlockedDate) return -1;
+                    return new Date(b.unlockedDate) - new Date(a.unlockedDate);
+                });
+
+                return achievements;
+            }
+
+            findMilestoneUnlockDate(playerData, threshold) {
+                for (const data of playerData) {
+                    if (data.experience >= threshold) {
+                        return data.date;
+                    }
+                }
+                return null;
+            }
+
+            findRankUnlockDate(positions, threshold) {
+                for (const pos of positions) {
+                    if (pos.position !== '?' && pos.position <= threshold) {
+                        return pos.date;
+                    }
+                }
+                return null;
+            }
+
+            checkDailyProgressAchievements(dailyChanges) {
+                const earned = [];
+                
+                // Consistent Grinder - 7+ consecutive days of XP gains
+                let currentStreak = 0;
+                let maxStreak = 0;
+                for (const day of dailyChanges) {
+                    if (day.change > 0) {
+                        currentStreak++;
+                        maxStreak = Math.max(maxStreak, currentStreak);
+                    } else {
+                        currentStreak = 0;
+                    }
+                }
+                if (maxStreak >= 7) {
+                    earned.push({
+                        ...ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "consistent_grinder"),
+                        category: "dailyProgress",
+                        unlockedDate: dailyChanges[0].date
+                    });
+                }
+
+                // Weekend Warrior - Check if highest gains are on weekends
+                const weekendGains = dailyChanges.filter(d => {
+                    const dayOfWeek = new Date(d.date).getDay();
+                    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+                }).map(d => d.change);
+                
+                const weekdayGains = dailyChanges.filter(d => {
+                    const dayOfWeek = new Date(d.date).getDay();
+                    return dayOfWeek >= 1 && dayOfWeek <= 5; // Monday to Friday
+                }).map(d => d.change);
+
+                if (weekendGains.length > 0 && weekdayGains.length > 0) {
+                    const avgWeekendGain = weekendGains.reduce((a, b) => a + b, 0) / weekendGains.length;
+                    const avgWeekdayGain = weekdayGains.reduce((a, b) => a + b, 0) / weekdayGains.length;
+                    
+                    if (avgWeekendGain > avgWeekdayGain * 1.5) {
+                        earned.push({
+                            ...ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "weekend_warrior"),
+                            category: "dailyProgress"
+                        });
+                    }
+                }
+
+                // Power Week - 100M+ XP in 7 days
+                for (let i = 6; i < dailyChanges.length; i++) {
+                    const weeklyGain = dailyChanges.slice(i-6, i+1).reduce((sum, day) => sum + day.change, 0);
+                    if (weeklyGain >= 100000000) {
+                        earned.push({
+                            ...ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "power_week"),
+                            category: "dailyProgress",
+                            unlockedDate: dailyChanges[i].date
+                        });
+                        break;
+                    }
+                }
+
+                // Marathon Month - 500M+ XP in 30 days
+                if (dailyChanges.length >= 30) {
+                    const monthlyGain = dailyChanges.slice(-30).reduce((sum, day) => sum + day.change, 0);
+                    if (monthlyGain >= 500000000) {
+                        earned.push({
+                            ...ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "marathon_month"),
+                            category: "dailyProgress",
+                            unlockedDate: dailyChanges[dailyChanges.length - 1].date
+                        });
+                    }
+                }
+
+                // Perfect Week - XP gain every day for 7 days
+                for (let i = 6; i < dailyChanges.length; i++) {
+                    const weekDays = dailyChanges.slice(i-6, i+1);
+                    if (weekDays.every(day => day.change > 0)) {
+                        earned.push({
+                            ...ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "perfect_week"),
+                            category: "dailyProgress",
+                            unlockedDate: dailyChanges[i].date
+                        });
+                        break;
+                    }
+                }
+
+                return earned;
+            }
+
+            checkRankingAchievements(positions) {
+                const earned = [];
+                const validPositions = positions.filter(p => p.position !== '?');
+                
+                if (validPositions.length < 2) return earned;
+
+                // Climber achievements
+                let maxImprovement = 0;
+                for (let i = 1; i < validPositions.length; i++) {
+                    const improvement = validPositions[i-1].position - validPositions[i].position;
+                    if (improvement > maxImprovement) {
+                        maxImprovement = improvement;
+                    }
+                }
+
+                if (maxImprovement >= 1000) {
+                    earned.push({
+                        ...ACHIEVEMENTS.ranking.achievements.find(a => a.id === "climber_1000"),
+                        category: "ranking"
+                    });
+                } else if (maxImprovement >= 500) {
+                    earned.push({
+                        ...ACHIEVEMENTS.ranking.achievements.find(a => a.id === "climber_500"),
+                        category: "ranking"
+                    });
+                } else if (maxImprovement >= 100) {
+                    earned.push({
+                        ...ACHIEVEMENTS.ranking.achievements.find(a => a.id === "climber_100"),
+                        category: "ranking"
+                    });
+                }
+
+                // Steady Rise - upward trend for 7+ days
+                let upwardTrend = 0;
+                let maxUpwardTrend = 0;
+                for (let i = 1; i < validPositions.length; i++) {
+                    if (validPositions[i].position < validPositions[i-1].position) {
+                        upwardTrend++;
+                        maxUpwardTrend = Math.max(maxUpwardTrend, upwardTrend);
+                    } else {
+                        upwardTrend = 0;
+                    }
+                }
+
+                if (maxUpwardTrend >= 7) {
+                    earned.push({
+                        ...ACHIEVEMENTS.ranking.achievements.find(a => a.id === "steady_rise"),
+                        category: "ranking"
+                    });
+                }
+
+                return earned;
+            }
+
+            checkGrowthRateAchievements(dailyChanges) {
+                const earned = [];
+                
+                // Single day achievements
+                const maxDailyGain = Math.max(...dailyChanges.map(d => d.change));
+                
+                if (maxDailyGain >= 200000000) {
+                    earned.push({
+                        ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "mega_grind"),
+                        category: "growthRate"
+                    });
+                } else if (maxDailyGain >= 100000000) {
+                    earned.push({
+                        ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "explosive_growth"),
+                        category: "growthRate"
+                    });
+                } else if (maxDailyGain >= 50000000) {
+                    earned.push({
+                        ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "speed_demon"),
+                        category: "growthRate"
+                    });
+                }
+
+                // Acceleration - increasing gains for 5+ days
+                let increasingStreak = 0;
+                let maxIncreasingStreak = 0;
+                for (let i = 1; i < dailyChanges.length; i++) {
+                    if (dailyChanges[i].change > dailyChanges[i-1].change && dailyChanges[i].change > 0) {
+                        increasingStreak++;
+                        maxIncreasingStreak = Math.max(maxIncreasingStreak, increasingStreak);
+                    } else {
+                        increasingStreak = 0;
+                    }
+                }
+
+                if (maxIncreasingStreak >= 5) {
+                    earned.push({
+                        ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "acceleration"),
+                        category: "growthRate"
+                    });
+                }
+
+                // Efficiency Expert - consistent 10M+ daily gains for 7+ days
+                let consistentStreak = 0;
+                let maxConsistentStreak = 0;
+                for (const day of dailyChanges) {
+                    if (day.change >= 10000000) {
+                        consistentStreak++;
+                        maxConsistentStreak = Math.max(maxConsistentStreak, consistentStreak);
+                    } else {
+                        consistentStreak = 0;
+                    }
+                }
+
+                if (maxConsistentStreak >= 7) {
+                    earned.push({
+                        ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "efficiency_expert"),
+                        category: "growthRate"
+                    });
+                }
+
+                // Late Bloomer - biggest improvement after 14+ days
+                if (dailyChanges.length > 14) {
+                    const firstTwoWeeks = dailyChanges.slice(0, 14);
+                    const afterTwoWeeks = dailyChanges.slice(14);
+                    
+                    const maxEarlyGain = Math.max(...firstTwoWeeks.map(d => d.change));
+                    const maxLateGain = Math.max(...afterTwoWeeks.map(d => d.change));
+                    
+                    if (maxLateGain > maxEarlyGain) {
+                        earned.push({
+                            ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "late_bloomer"),
+                            category: "growthRate"
+                        });
+                    }
+                }
+
+                return earned;
+            }
+
+            checkSpecialPatternAchievements(playerData, dailyChanges) {
+                const earned = [];
+
+                // Check for exact round numbers
+                for (const data of playerData) {
+                    if (data.experience === 100000000) {
+                        earned.push({
+                            ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "round_number_100m"),
+                            category: "specialPatterns",
+                            unlockedDate: data.date
+                        });
+                    }
+                    if (data.experience === 500000000) {
+                        earned.push({
+                            ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "round_number_500m"),
+                            category: "specialPatterns",
+                            unlockedDate: data.date
+                        });
+                    }
+                    if (data.experience === 1000000000) {
+                        earned.push({
+                            ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "round_number_1b"),
+                            category: "specialPatterns",
+                            unlockedDate: data.date
+                        });
+                    }
+                }
+
+                // Lucky number endings
+                const currentXP = playerData[playerData.length - 1].experience;
+                const xpString = currentXP.toString();
+                
+                if (xpString.endsWith('777')) {
+                    earned.push({
+                        ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "lucky_777"),
+                        category: "specialPatterns"
+                    });
+                }
+                if (xpString.endsWith('888')) {
+                    earned.push({
+                        ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "lucky_888"),
+                        category: "specialPatterns"
+                    });
+                }
+                if (xpString.endsWith('999')) {
+                    earned.push({
+                        ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "lucky_999"),
+                        category: "specialPatterns"
+                    });
+                }
+
+                // Milestone Hunter - 3+ major milestones in 30 days
+                const milestones = [1000000, 5000000, 10000000, 25000000, 50000000, 100000000, 250000000, 500000000, 1000000000];
+                if (playerData.length >= 30) {
+                    const last30Days = playerData.slice(-30);
+                    let milestonesHit = 0;
+                    
+                    for (const milestone of milestones) {
+                        const startXP = last30Days[0].experience;
+                        const endXP = last30Days[last30Days.length - 1].experience;
+                        
+                        if (startXP < milestone && endXP >= milestone) {
+                            milestonesHit++;
+                        }
+                    }
+                    
+                    if (milestonesHit >= 3) {
+                        earned.push({
+                            ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "milestone_hunter"),
+                            category: "specialPatterns"
+                        });
+                    }
+                }
+
+                // Balanced Growth - steady gains (±20%) for 7+ days
+                if (dailyChanges.length >= 7) {
+                    for (let i = 6; i < dailyChanges.length; i++) {
+                        const weekDays = dailyChanges.slice(i-6, i+1);
+                        const avgGain = weekDays.reduce((sum, day) => sum + day.change, 0) / 7;
+                        
+                        if (avgGain > 0) {
+                            const isBalanced = weekDays.every(day => {
+                                const deviation = Math.abs(day.change - avgGain) / avgGain;
+                                return deviation <= 0.2 && day.change > 0;
+                            });
+                            
+                            if (isBalanced) {
+                                earned.push({
+                                    ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "balanced_growth"),
+                                    category: "specialPatterns",
+                                    unlockedDate: dailyChanges[i].date
+                                });
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                return earned;
+            }
+
+            checkComparativeAchievements(playerName, positions, dailyChanges) {
+                const earned = [];
+                const validPositions = positions.filter(p => p.position !== '?');
+                
+                if (validPositions.length < 2) return earned;
+
+                // Giant Slayer - overtake someone 1000+ ranks above in single day
+                for (let i = 1; i < validPositions.length; i++) {
+                    const rankImprovement = validPositions[i-1].position - validPositions[i].position;
+                    if (rankImprovement >= 1000) {
+                        earned.push({
+                            ...ACHIEVEMENTS.comparative.achievements.find(a => a.id === "giant_slayer"),
+                            category: "comparative",
+                            unlockedDate: validPositions[i].date
+                        });
+                        break;
+                    }
+                }
+
+                // Comeback Kid - return to previous high after 7+ day decline
+                let highRank = validPositions[0].position;
+                let declineDays = 0;
+                
+                for (let i = 1; i < validPositions.length; i++) {
+                    if (validPositions[i].position < highRank) {
+                        highRank = validPositions[i].position;
+                        declineDays = 0;
+                    } else if (validPositions[i].position > highRank) {
+                        declineDays++;
+                        if (declineDays >= 7) {
+                            // Check if they came back to previous high
+                            for (let j = i + 1; j < validPositions.length; j++) {
+                                if (validPositions[j].position <= highRank) {
+                                    earned.push({
+                                        ...ACHIEVEMENTS.comparative.achievements.find(a => a.id === "comeback_kid"),
+                                        category: "comparative",
+                                        unlockedDate: validPositions[j].date
+                                    });
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                // Never Give Up - continue gaining XP after rank drops
+                let hasRankDrop = false;
+                let gainAfterDrop = false;
+                
+                for (let i = 1; i < Math.min(validPositions.length, dailyChanges.length + 1); i++) {
+                    if (validPositions[i].position > validPositions[i-1].position) {
+                        hasRankDrop = true;
+                    }
+                    if (hasRankDrop && i <= dailyChanges.length && dailyChanges[i-1].change > 0) {
+                        gainAfterDrop = true;
+                        break;
+                    }
+                }
+
+                if (hasRankDrop && gainAfterDrop) {
+                    earned.push({
+                        ...ACHIEVEMENTS.comparative.achievements.find(a => a.id === "never_give_up"),
+                        category: "comparative"
+                    });
+                }
+
+                // Steady Eddie - never drop more than 10% in experience over 14+ days
+                if (positions.length >= 14) {
+                    let maxXPLoss = 0;
+                    let highXP = positions[0].experience;
+                    
+                    for (const pos of positions) {
+                        if (pos.experience > highXP) {
+                            highXP = pos.experience;
+                        } else {
+                            const percentLoss = (highXP - pos.experience) / highXP;
+                            maxXPLoss = Math.max(maxXPLoss, percentLoss);
+                        }
+                    }
+                    
+                    if (maxXPLoss <= 0.1) {
+                        earned.push({
+                            ...ACHIEVEMENTS.comparative.achievements.find(a => a.id === "steady_eddie"),
+                            category: "comparative"
+                        });
+                    }
+                }
+
+                return earned;
+            }
+
+            showAchievements(playerName, achievements) {
+                const achievementsSection = document.getElementById('achievementsSection');
+                const summaryContainer = document.getElementById('achievementsSummary');
+                const contentContainer = document.getElementById('achievementsContent');
+                
+                // Count achievements by category and rarity
+                const summary = {
+                    total: achievements.earned.length,
+                    byCategory: {},
+                    byRarity: {}
+                };
+
+                for (const achievement of achievements.earned) {
+                    const category = achievement.category;
+                    const rarity = achievement.rarity;
+                    
+                    summary.byCategory[category] = (summary.byCategory[category] || 0) + 1;
+                    summary.byRarity[rarity] = (summary.byRarity[rarity] || 0) + 1;
+                }
+
+                // Show summary cards
+                summaryContainer.innerHTML = `
+                    <div class="achievement-summary-card">
+                        <div class="achievement-summary-value" style="color: #28a745;">${summary.total}</div>
+                        <div class="achievement-summary-label">Total Earned</div>
+                    </div>
+                    <div class="achievement-summary-card">
+                        <div class="achievement-summary-value" style="color: #f1c40f;">${summary.byRarity['Legendary'] || 0}</div>
+                        <div class="achievement-summary-label">Legendary</div>
+                    </div>
+                    <div class="achievement-summary-card">
+                        <div class="achievement-summary-value" style="color: #e67e22;">${summary.byRarity['Epic'] || 0}</div>
+                        <div class="achievement-summary-label">Epic</div>
+                    </div>
+                    <div class="achievement-summary-card">
+                        <div class="achievement-summary-value" style="color: #9b59b6;">${summary.byRarity['Rare'] || 0}</div>
+                        <div class="achievement-summary-label">Rare</div>
+                    </div>
+                `;
+
+                // Initialize tab functionality
+                this.initializeAchievementTabs(achievements);
+
+                // Show initial content (all achievements)
+                this.displayAchievementCategory('all', achievements);
+
+                achievementsSection.style.display = 'block';
+            }
+
+            initializeAchievementTabs(achievements) {
+                const tabs = document.querySelectorAll('.achievement-tab');
+                
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        // Remove active class from all tabs
+                        tabs.forEach(t => t.classList.remove('active'));
+                        // Add active class to clicked tab
+                        tab.classList.add('active');
+                        
+                        // Display content for selected category
+                        const category = tab.getAttribute('data-category');
+                        this.displayAchievementCategory(category, achievements);
+                    });
+                });
+            }
+
+            displayAchievementCategory(category, achievements) {
+                const contentContainer = document.getElementById('achievementsContent');
+                
+                let displayAchievements = [];
+                let displayProgress = [];
+                
+                if (category === 'all') {
+                    displayAchievements = achievements.earned;
+                    displayProgress = achievements.progress;
+                } else {
+                    displayAchievements = achievements.earned.filter(a => a.category === category);
+                    displayProgress = achievements.progress.filter(a => a.category === category);
+                }
+
+                if (displayAchievements.length === 0 && displayProgress.length === 0) {
+                    contentContainer.innerHTML = `
+                        <div class="no-achievements">
+                            <div class="no-achievements-icon">🎯</div>
+                            <div>No achievements in this category yet.</div>
+                            <div style="font-size: 12px; margin-top: 10px; opacity: 0.7;">Keep playing to unlock achievements!</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '<div class="achievement-grid">';
+                
+                // Add earned achievements
+                displayAchievements.forEach(achievement => {
+                    const rarityClass = `rarity-${achievement.rarity.toLowerCase()}`;
+                    html += `
+                        <div class="achievement-card earned ${rarityClass}">
+                            <div class="achievement-header-row">
+                                <div class="achievement-title">
+                                    <span class="achievement-badge">${achievement.badge}</span>
+                                    <span>${achievement.name}</span>
+                                </div>
+                                <div class="achievement-rarity ${rarityClass}">${achievement.rarity}</div>
+                            </div>
+                            <div class="achievement-description">${achievement.description}</div>
+                            ${achievement.unlockedDate ? `<div class="achievement-date">Unlocked: ${achievement.unlockedDate}</div>` : ''}
+                        </div>
+                    `;
+                });
+
+                // Add progress achievements
+                displayProgress.forEach(achievement => {
+                    const rarityClass = `rarity-${achievement.rarity.toLowerCase()}`;
+                    html += `
+                        <div class="achievement-card progress ${rarityClass}">
+                            <div class="achievement-header-row">
+                                <div class="achievement-title">
+                                    <span class="achievement-badge" style="opacity: 0.5;">${achievement.badge}</span>
+                                    <span>${achievement.name}</span>
+                                </div>
+                                <div class="achievement-rarity ${rarityClass}">${achievement.rarity}</div>
+                            </div>
+                            <div class="achievement-description">${achievement.description}</div>
+                            <div class="achievement-progress-bar">
+                                <div class="achievement-progress-fill" style="width: ${achievement.progress}%;"></div>
+                            </div>
+                            <div class="achievement-progress-text">
+                                ${achievement.current?.toLocaleString()} / ${achievement.target?.toLocaleString()} (${achievement.progress.toFixed(1)}%)
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+                contentContainer.innerHTML = html;
             }
             
             getPlayerHistory(playerName) {
@@ -789,6 +1811,9 @@
                 
                 console.log(`Creating chart for ${playerName} with ${data.length} data points:`);
                 console.log('Data points:', data.map(d => `${d.date}: ${d.experience}`));
+
+                // Calculate achievements for markers
+                const achievements = this.calculateAchievements(playerName, data);
                 
                 // Create daily changes chart with ALL data points
                 const labels = data.map(d => d.date);
@@ -815,6 +1840,33 @@
                     return '#6c757d'; // Gray for no change
                 });
                 
+                // Create achievement annotations
+                const achievementAnnotations = {};
+                achievements.earned.forEach((achievement, index) => {
+                    if (achievement.unlockedDate && labels.includes(achievement.unlockedDate)) {
+                        const labelIndex = labels.indexOf(achievement.unlockedDate);
+                        achievementAnnotations[`achievement${index}`] = {
+                            type: 'point',
+                            xValue: achievement.unlockedDate,
+                            yValue: dailyChanges[labelIndex],
+                            backgroundColor: RARITY_COLORS[achievement.rarity] || '#ffd700',
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            radius: 8,
+                            label: {
+                                content: achievement.badge,
+                                enabled: true,
+                                position: 'top',
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                color: '#fff',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        };
+                    }
+                });
+
                 this.chart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -847,6 +1899,9 @@
                             },
                             legend: {
                                 display: false
+                            },
+                            annotation: {
+                                annotations: achievementAnnotations
                             },
                             tooltip: {
                                 callbacks: {
