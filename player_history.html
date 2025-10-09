@@ -1407,11 +1407,14 @@
                     }
                 }
                 if (maxStreak >= 7) {
-                    earned.push({
-                        ...ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "consistent_grinder"),
-                        category: "dailyProgress",
-                        unlockedDate: dailyChanges[0].date
-                    });
+                    const achievement = ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "consistent_grinder");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "dailyProgress",
+                            unlockedDate: dailyChanges[0].date
+                        });
+                    }
                 }
 
                 // Weekend Warrior - Check if highest gains are on weekends
@@ -1430,10 +1433,13 @@
                     const avgWeekdayGain = weekdayGains.reduce((a, b) => a + b, 0) / weekdayGains.length;
                     
                     if (avgWeekendGain > avgWeekdayGain * 1.5) {
-                        earned.push({
-                            ...ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "weekend_warrior"),
-                            category: "dailyProgress"
-                        });
+                        const achievement = ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "weekend_warrior");
+                        if (achievement) {
+                            earned.push({
+                                ...achievement,
+                                category: "dailyProgress"
+                            });
+                        }
                     }
                 }
 
@@ -1441,11 +1447,14 @@
                 for (let i = 6; i < dailyChanges.length; i++) {
                     const weeklyGain = dailyChanges.slice(i-6, i+1).reduce((sum, day) => sum + day.change, 0);
                     if (weeklyGain >= 100000000) {
-                        earned.push({
-                            ...ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "power_week"),
-                            category: "dailyProgress",
-                            unlockedDate: dailyChanges[i].date
-                        });
+                        const achievement = ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "power_week");
+                        if (achievement) {
+                            earned.push({
+                                ...achievement,
+                                category: "dailyProgress",
+                                unlockedDate: dailyChanges[i].date
+                            });
+                        }
                         break;
                     }
                 }
@@ -1454,11 +1463,14 @@
                 if (dailyChanges.length >= 30) {
                     const monthlyGain = dailyChanges.slice(-30).reduce((sum, day) => sum + day.change, 0);
                     if (monthlyGain >= 500000000) {
-                        earned.push({
-                            ...ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "marathon_month"),
-                            category: "dailyProgress",
-                            unlockedDate: dailyChanges[dailyChanges.length - 1].date
-                        });
+                        const achievement = ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "marathon_month");
+                        if (achievement) {
+                            earned.push({
+                                ...achievement,
+                                category: "dailyProgress",
+                                unlockedDate: dailyChanges[dailyChanges.length - 1].date
+                            });
+                        }
                     }
                 }
 
@@ -1466,11 +1478,14 @@
                 for (let i = 6; i < dailyChanges.length; i++) {
                     const weekDays = dailyChanges.slice(i-6, i+1);
                     if (weekDays.every(day => day.change > 0)) {
-                        earned.push({
-                            ...ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "perfect_week"),
-                            category: "dailyProgress",
-                            unlockedDate: dailyChanges[i].date
-                        });
+                        const achievement = ACHIEVEMENTS.dailyProgress.achievements.find(a => a.id === "perfect_week");
+                        if (achievement) {
+                            earned.push({
+                                ...achievement,
+                                category: "dailyProgress",
+                                unlockedDate: dailyChanges[i].date
+                            });
+                        }
                         break;
                     }
                 }
@@ -1494,20 +1509,29 @@
                 }
 
                 if (maxImprovement >= 1000) {
-                    earned.push({
-                        ...ACHIEVEMENTS.ranking.achievements.find(a => a.id === "climber_1000"),
-                        category: "ranking"
-                    });
+                    const achievement = ACHIEVEMENTS.ranking.achievements.find(a => a.id === "climber_1000");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "ranking"
+                        });
+                    }
                 } else if (maxImprovement >= 500) {
-                    earned.push({
-                        ...ACHIEVEMENTS.ranking.achievements.find(a => a.id === "climber_500"),
-                        category: "ranking"
-                    });
+                    const achievement = ACHIEVEMENTS.ranking.achievements.find(a => a.id === "climber_500");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "ranking"
+                        });
+                    }
                 } else if (maxImprovement >= 100) {
-                    earned.push({
-                        ...ACHIEVEMENTS.ranking.achievements.find(a => a.id === "climber_100"),
-                        category: "ranking"
-                    });
+                    const achievement = ACHIEVEMENTS.ranking.achievements.find(a => a.id === "climber_100");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "ranking"
+                        });
+                    }
                 }
 
                 // Steady Rise - upward trend for 7+ days
@@ -1523,10 +1547,13 @@
                 }
 
                 if (maxUpwardTrend >= 7) {
-                    earned.push({
-                        ...ACHIEVEMENTS.ranking.achievements.find(a => a.id === "steady_rise"),
-                        category: "ranking"
-                    });
+                    const achievement = ACHIEVEMENTS.ranking.achievements.find(a => a.id === "steady_rise");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "ranking"
+                        });
+                    }
                 }
 
                 return earned;
@@ -1539,20 +1566,29 @@
                 const maxDailyGain = Math.max(...dailyChanges.map(d => d.change));
                 
                 if (maxDailyGain >= 200000000) {
-                    earned.push({
-                        ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "mega_grind"),
-                        category: "growthRate"
-                    });
+                    const achievement = ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "mega_grind");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "growthRate"
+                        });
+                    }
                 } else if (maxDailyGain >= 100000000) {
-                    earned.push({
-                        ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "explosive_growth"),
-                        category: "growthRate"
-                    });
+                    const achievement = ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "explosive_growth");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "growthRate"
+                        });
+                    }
                 } else if (maxDailyGain >= 50000000) {
-                    earned.push({
-                        ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "speed_demon"),
-                        category: "growthRate"
-                    });
+                    const achievement = ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "speed_demon");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "growthRate"
+                        });
+                    }
                 }
 
                 // Acceleration - increasing gains for 5+ days
@@ -1568,10 +1604,13 @@
                 }
 
                 if (maxIncreasingStreak >= 5) {
-                    earned.push({
-                        ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "acceleration"),
-                        category: "growthRate"
-                    });
+                    const achievement = ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "acceleration");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "growthRate"
+                        });
+                    }
                 }
 
                 // Efficiency Expert - consistent 10M+ daily gains for 7+ days
@@ -1587,10 +1626,13 @@
                 }
 
                 if (maxConsistentStreak >= 7) {
-                    earned.push({
-                        ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "efficiency_expert"),
-                        category: "growthRate"
-                    });
+                    const achievement = ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "efficiency_expert");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "growthRate"
+                        });
+                    }
                 }
 
                 // Late Bloomer - biggest improvement after 14+ days
@@ -1602,10 +1644,13 @@
                     const maxLateGain = Math.max(...afterTwoWeeks.map(d => d.change));
                     
                     if (maxLateGain > maxEarlyGain) {
-                        earned.push({
-                            ...ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "late_bloomer"),
-                            category: "growthRate"
-                        });
+                        const achievement = ACHIEVEMENTS.growthRate.achievements.find(a => a.id === "late_bloomer");
+                        if (achievement) {
+                            earned.push({
+                                ...achievement,
+                                category: "growthRate"
+                            });
+                        }
                     }
                 }
 
@@ -1618,25 +1663,34 @@
                 // Check for exact round numbers
                 for (const data of playerData) {
                     if (data.experience === 100000000) {
-                        earned.push({
-                            ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "round_number_100m"),
-                            category: "specialPatterns",
-                            unlockedDate: data.date
-                        });
+                        const achievement = ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "round_number_100m");
+                        if (achievement) {
+                            earned.push({
+                                ...achievement,
+                                category: "specialPatterns",
+                                unlockedDate: data.date
+                            });
+                        }
                     }
                     if (data.experience === 500000000) {
-                        earned.push({
-                            ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "round_number_500m"),
-                            category: "specialPatterns",
-                            unlockedDate: data.date
-                        });
+                        const achievement = ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "round_number_500m");
+                        if (achievement) {
+                            earned.push({
+                                ...achievement,
+                                category: "specialPatterns",
+                                unlockedDate: data.date
+                            });
+                        }
                     }
                     if (data.experience === 1000000000) {
-                        earned.push({
-                            ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "round_number_1b"),
-                            category: "specialPatterns",
-                            unlockedDate: data.date
-                        });
+                        const achievement = ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "round_number_1b");
+                        if (achievement) {
+                            earned.push({
+                                ...achievement,
+                                category: "specialPatterns",
+                                unlockedDate: data.date
+                            });
+                        }
                     }
                 }
 
@@ -1645,22 +1699,31 @@
                 const xpString = currentXP.toString();
                 
                 if (xpString.endsWith('777')) {
-                    earned.push({
-                        ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "lucky_777"),
-                        category: "specialPatterns"
-                    });
+                    const achievement = ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "lucky_777");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "specialPatterns"
+                        });
+                    }
                 }
                 if (xpString.endsWith('888')) {
-                    earned.push({
-                        ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "lucky_888"),
-                        category: "specialPatterns"
-                    });
+                    const achievement = ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "lucky_888");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "specialPatterns"
+                        });
+                    }
                 }
                 if (xpString.endsWith('999')) {
-                    earned.push({
-                        ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "lucky_999"),
-                        category: "specialPatterns"
-                    });
+                    const achievement = ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "lucky_999");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "specialPatterns"
+                        });
+                    }
                 }
 
                 // Milestone Hunter - 3+ major milestones in 30 days
@@ -1679,10 +1742,13 @@
                     }
                     
                     if (milestonesHit >= 3) {
-                        earned.push({
-                            ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "milestone_hunter"),
-                            category: "specialPatterns"
-                        });
+                        const achievement = ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "milestone_hunter");
+                        if (achievement) {
+                            earned.push({
+                                ...achievement,
+                                category: "specialPatterns"
+                            });
+                        }
                     }
                 }
 
@@ -1699,11 +1765,14 @@
                             });
                             
                             if (isBalanced) {
-                                earned.push({
-                                    ...ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "balanced_growth"),
-                                    category: "specialPatterns",
-                                    unlockedDate: dailyChanges[i].date
-                                });
+                                const achievement = ACHIEVEMENTS.specialPatterns.achievements.find(a => a.id === "balanced_growth");
+                                if (achievement) {
+                                    earned.push({
+                                        ...achievement,
+                                        category: "specialPatterns",
+                                        unlockedDate: dailyChanges[i].date
+                                    });
+                                }
                                 break;
                             }
                         }
@@ -1723,11 +1792,14 @@
                 for (let i = 1; i < validPositions.length; i++) {
                     const rankImprovement = validPositions[i-1].position - validPositions[i].position;
                     if (rankImprovement >= 1000) {
-                        earned.push({
-                            ...ACHIEVEMENTS.comparative.achievements.find(a => a.id === "giant_slayer"),
-                            category: "comparative",
-                            unlockedDate: validPositions[i].date
-                        });
+                        const achievement = ACHIEVEMENTS.comparative.achievements.find(a => a.id === "giant_slayer");
+                        if (achievement) {
+                            earned.push({
+                                ...achievement,
+                                category: "comparative",
+                                unlockedDate: validPositions[i].date
+                            });
+                        }
                         break;
                     }
                 }
@@ -1746,11 +1818,14 @@
                             // Check if they came back to previous high
                             for (let j = i + 1; j < validPositions.length; j++) {
                                 if (validPositions[j].position <= highRank) {
-                                    earned.push({
-                                        ...ACHIEVEMENTS.comparative.achievements.find(a => a.id === "comeback_kid"),
-                                        category: "comparative",
-                                        unlockedDate: validPositions[j].date
-                                    });
+                                    const achievement = ACHIEVEMENTS.comparative.achievements.find(a => a.id === "comeback_kid");
+                                    if (achievement) {
+                                        earned.push({
+                                            ...achievement,
+                                            category: "comparative",
+                                            unlockedDate: validPositions[j].date
+                                        });
+                                    }
                                     break;
                                 }
                             }
@@ -1774,10 +1849,13 @@
                 }
 
                 if (hasRankDrop && gainAfterDrop) {
-                    earned.push({
-                        ...ACHIEVEMENTS.comparative.achievements.find(a => a.id === "never_give_up"),
-                        category: "comparative"
-                    });
+                    const achievement = ACHIEVEMENTS.comparative.achievements.find(a => a.id === "never_give_up");
+                    if (achievement) {
+                        earned.push({
+                            ...achievement,
+                            category: "comparative"
+                        });
+                    }
                 }
 
                 // Steady Eddie - never drop more than 10% in experience over 14+ days
@@ -1795,10 +1873,13 @@
                     }
                     
                     if (maxXPLoss <= 0.1) {
-                        earned.push({
-                            ...ACHIEVEMENTS.comparative.achievements.find(a => a.id === "steady_eddie"),
-                            category: "comparative"
-                        });
+                        const achievement = ACHIEVEMENTS.comparative.achievements.find(a => a.id === "steady_eddie");
+                        if (achievement) {
+                            earned.push({
+                                ...achievement,
+                                category: "comparative"
+                            });
+                        }
                     }
                 }
 
