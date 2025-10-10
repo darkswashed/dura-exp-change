@@ -883,121 +883,188 @@
             }
             
             calculatePowerLevel(playerName, data) {
-                if (data.length < 2) return { powerLevel: 1000, tier: 'novice', tierClass: 'novice' };
+                if (data.length === 0) return { powerLevel: 0, tier: '🌱 NOVICE 🌱', tierClass: 'novice' };
 
                 const latestData = data[data.length - 1];
-                
-                // Get total players for rank calculation
                 const latestDate = latestData.date;
-                const playersOnLatestDate = this.csvData.get(latestDate);
-                const totalPlayers = playersOnLatestDate ? playersOnLatestDate.size : 100;
                 
                 // Calculate current position
                 const { position } = this.calculatePlayerPosition(latestDate, playerName);
                 
-                // 1. Rank Weight (50%) - Much more weight to leaderboard position
-                const rankScore = ((totalPlayers - position + 1) / totalPlayers) * 5000;
+                // Simple formula: Total Experience / Rank
+                const totalPowerLevel = Math.round(latestData.experience / position);
                 
-                // 2. Total Experience Weight (30%) - More weight to total experience
-                const maxExp = 20000000000; // 20B as reasonable max for scaling
-                const expScore = Math.min(latestData.experience / maxExp, 1) * 3000;
+                // Determine tier based on Power Level - Badass progression system
+                let tier, tierClass;
                 
-                // 3. Recent Performance (15%) - Reduced from 30%
-                const recentDays = Math.min(7, data.length - 1);
-                let recentGains = 0;
-                let historicalAvg = 0;
+                // Ultra High Tiers (1,000,000+ intervals)
+                if (totalPowerLevel >= 10000000) {
+                    tier = '⚡ APEX PREDATOR ⚡';
+                    tierClass = 'legendary';
+                } else if (totalPowerLevel >= 9000000) {
+                    tier = '💥 ULTIMATE DESTROYER 💥';
+                    tierClass = 'legendary';
+                } else if (totalPowerLevel >= 8000000) {
+                    tier = '🌠 TRANSCENDENT BEING 🌠';
+                    tierClass = 'legendary';
+                } else if (totalPowerLevel >= 7000000) {
+                    tier = '👑 ABSOLUTE SOVEREIGN 👑';
+                    tierClass = 'legendary';
+                } else if (totalPowerLevel >= 6000000) {
+                    tier = '⚡ OMNIVERSAL GOD ⚡';
+                    tierClass = 'legendary';
+                } else if (totalPowerLevel >= 5000000) {
+                    tier = '🌌 INFINITY MASTER 🌌';
+                    tierClass = 'legendary';
+                } else if (totalPowerLevel >= 4000000) {
+                    tier = '💀 OBLIVION LORD 💀';
+                    tierClass = 'legendary';
+                } else if (totalPowerLevel >= 3000000) {
+                    tier = '🌟 GENESIS EMPEROR 🌟';
+                    tierClass = 'legendary';
+                } else if (totalPowerLevel >= 2000000) {
+                    tier = '⚡ PRIMORDIAL FORCE ⚡';
+                    tierClass = 'legendary';
+                } else if (totalPowerLevel >= 1000000) {
+                    tier = '🔥 ETERNAL DESTROYER 🔥';
+                    tierClass = 'legendary';
                 
-                if (data.length > 1) {
-                    // Recent gains
-                    for (let i = Math.max(1, data.length - recentDays); i < data.length; i++) {
-                        recentGains += data[i].experience - data[i - 1].experience;
-                    }
-                    recentGains = recentGains / recentDays;
-                    
-                    // Historical average
-                    let totalGains = 0;
-                    for (let i = 1; i < data.length; i++) {
-                        totalGains += data[i].experience - data[i - 1].experience;
-                    }
-                    historicalAvg = totalGains / (data.length - 1);
-                    
-                    // Performance multiplier
-                    const performanceRatio = historicalAvg > 0 ? Math.max(0.5, Math.min(2, recentGains / historicalAvg)) : 1;
-                    const performanceScore = performanceRatio * 1500;
-                    
-                    // 4. Consistency Score (5%) - Reduced weight
-                    const dailyGains = [];
-                    for (let i = 1; i < data.length; i++) {
-                        dailyGains.push(data[i].experience - data[i - 1].experience);
-                    }
-                    
-                    const avgGain = dailyGains.reduce((a, b) => a + b, 0) / dailyGains.length;
-                    const variance = dailyGains.reduce((acc, gain) => acc + Math.pow(gain - avgGain, 2), 0) / dailyGains.length;
-                    const consistencyScore = Math.max(0, 500 - (variance / 20000)); // Lower variance = higher score
-                    
-                    // 5. Elite Bonuses (remaining weight)
-                    let eliteBonus = 0;
-                    
-                    // Milestone bonuses
-                    const exp = latestData.experience;
-                    if (exp >= 10000000000) eliteBonus += 300; // 10B+
-                    else if (exp >= 5000000000) eliteBonus += 200; // 5B+
-                    else if (exp >= 1000000000) eliteBonus += 100; // 1B+
-                    else if (exp >= 500000000) eliteBonus += 50; // 500M+
-                    
-                    // Top rank bonuses
-                    if (position <= 5) eliteBonus += 500;
-                    else if (position <= 10) eliteBonus += 300;
-                    else if (position <= 25) eliteBonus += 150;
-                    
-                    // Streak bonus (consecutive positive days)
-                    let currentStreak = 0;
-                    for (let i = dailyGains.length - 1; i >= 0; i--) {
-                        if (dailyGains[i] > 0) currentStreak++;
-                        else break;
-                    }
-                    if (currentStreak >= 10) eliteBonus += 200;
-                    else if (currentStreak >= 5) eliteBonus += 100;
-                    
-                    const totalPowerLevel = Math.round(rankScore + expScore + performanceScore + consistencyScore + eliteBonus);
-                    
-                    // Determine tier
-                    let tier, tierClass;
-                    if (totalPowerLevel >= 9000) {
-                        tier = '✨ LEGENDARY ✨';
-                        tierClass = 'legendary';
-                    } else if (totalPowerLevel >= 7000) {
-                        tier = '⭐ ELITE ⭐';
-                        tierClass = 'elite';
-                    } else if (totalPowerLevel >= 5000) {
-                        tier = '🔥 EXPERT 🔥';
-                        tierClass = 'expert';
-                    } else if (totalPowerLevel >= 3000) {
-                        tier = '📈 ADVANCED 📈';
-                        tierClass = 'advanced';
-                    } else if (totalPowerLevel >= 1000) {
-                        tier = '⚡ INTERMEDIATE ⚡';
-                        tierClass = 'intermediate';
-                    } else {
-                        tier = '🌱 NOVICE 🌱';
-                        tierClass = 'novice';
-                    }
-                    
-                    return {
-                        powerLevel: totalPowerLevel,
-                        tier,
-                        tierClass,
-                        components: {
-                            rankScore: Math.round(rankScore),
-                            expScore: Math.round(expScore),
-                            performanceScore: Math.round(performanceScore),
-                            consistencyScore: Math.round(consistencyScore),
-                            eliteBonus: Math.round(eliteBonus)
-                        }
-                    };
+                // High Tiers (100,000 intervals)
+                } else if (totalPowerLevel >= 900000) {
+                    tier = '🌌 COSMOS MASTER 🌌';
+                    tierClass = 'elite';
+                } else if (totalPowerLevel >= 800000) {
+                    tier = '⚡ DIMENSIONAL LORD ⚡';
+                    tierClass = 'elite';
+                } else if (totalPowerLevel >= 700000) {
+                    tier = '💥 MULTIVERSE KING 💥';
+                    tierClass = 'elite';
+                } else if (totalPowerLevel >= 600000) {
+                    tier = '🌠 STELLAR DOMINATOR 🌠';
+                    tierClass = 'elite';
+                } else if (totalPowerLevel >= 500000) {
+                    tier = '👑 INFINITE RULER 👑';
+                    tierClass = 'elite';
+                } else if (totalPowerLevel >= 400000) {
+                    tier = '🔮 REALITY ARCHITECT 🔮';
+                    tierClass = 'elite';
+                } else if (totalPowerLevel >= 300000) {
+                    tier = '⚡ OMNIPOTENT FORCE ⚡';
+                    tierClass = 'elite';
+                } else if (totalPowerLevel >= 200000) {
+                    tier = '🌌 UNIVERSE BENDER 🌌';
+                    tierClass = 'elite';
+                } else if (totalPowerLevel >= 100000) {
+                    tier = '🌟 GALACTIC EMPEROR 🌟';
+                    tierClass = 'elite';
+                
+                // Mid Tiers (10,000 intervals)
+                } else if (totalPowerLevel >= 90000) {
+                    tier = '💎 DIAMOND OVERLORD 💎';
+                    tierClass = 'expert';
+                } else if (totalPowerLevel >= 80000) {
+                    tier = '🌪️ HURRICANE KING 🌪️';
+                    tierClass = 'expert';
+                } else if (totalPowerLevel >= 70000) {
+                    tier = '❄️ ABSOLUTE ZERO ❄️';
+                    tierClass = 'expert';
+                } else if (totalPowerLevel >= 60000) {
+                    tier = '🔥 INFERNAL SOVEREIGN 🔥';
+                    tierClass = 'expert';
+                } else if (totalPowerLevel >= 50000) {
+                    tier = '⚡ THUNDER GOD ⚡';
+                    tierClass = 'expert';
+                } else if (totalPowerLevel >= 40000) {
+                    tier = '🌠 CELESTIAL WARDEN 🌠';
+                    tierClass = 'expert';
+                } else if (totalPowerLevel >= 30000) {
+                    tier = '� CHAOS EMPEROR 👑';
+                    tierClass = 'expert';
+                } else if (totalPowerLevel >= 20000) {
+                    tier = '🔮 SOUL HARVESTER 🔮';
+                    tierClass = 'expert';
+                } else if (totalPowerLevel >= 10000) {
+                    tier = '🌌 COSMIC SLAYER 🌌';
+                    tierClass = 'expert';
+                
+                // Low Tiers (500 intervals)
+                } else if (totalPowerLevel >= 9500) {
+                    tier = '⚡ DIMENSION RIPPER ⚡';
+                    tierClass = 'advanced';
+                } else if (totalPowerLevel >= 9000) {
+                    tier = '💥 REALITY SHAPER 💥';
+                    tierClass = 'advanced';
+                } else if (totalPowerLevel >= 8500) {
+                    tier = '🌙 VOID WALKER 🌙';
+                    tierClass = 'advanced';
+                } else if (totalPowerLevel >= 8000) {
+                    tier = '🌟 STAR CRUSHER 🌟';
+                    tierClass = 'advanced';
+                } else if (totalPowerLevel >= 7500) {
+                    tier = '🌊 TIDE TURNER 🌊';
+                    tierClass = 'advanced';
+                } else if (totalPowerLevel >= 7000) {
+                    tier = '⚡ STORM BREAKER ⚡';
+                    tierClass = 'advanced';
+                } else if (totalPowerLevel >= 6500) {
+                    tier = '🌋 INFERNO LORD 🌋';
+                    tierClass = 'advanced';
+                } else if (totalPowerLevel >= 6000) {
+                    tier = '💀 DEATH DEALER �';
+                    tierClass = 'advanced';
+                } else if (totalPowerLevel >= 5500) {
+                    tier = '🔥 OBLITERATOR 🔥';
+                    tierClass = 'advanced';
+                } else if (totalPowerLevel >= 5000) {
+                    tier = '⚡ ANNIHILATOR ⚡';
+                    tierClass = 'advanced';
+                } else if (totalPowerLevel >= 4500) {
+                    tier = '🌪️ RAVAGER 🌪️';
+                    tierClass = 'intermediate';
+                } else if (totalPowerLevel >= 4000) {
+                    tier = '💥 DESTROYER 💥';
+                    tierClass = 'intermediate';
+                } else if (totalPowerLevel >= 3500) {
+                    tier = '🗡️ EXECUTIONER 🗡️';
+                    tierClass = 'intermediate';
+                } else if (totalPowerLevel >= 3000) {
+                    tier = '⚔️ GLADIATOR ⚔️';
+                    tierClass = 'intermediate';
+                } else if (totalPowerLevel >= 2500) {
+                    tier = '💀 SLAYER 💀';
+                    tierClass = 'intermediate';
+                } else if (totalPowerLevel >= 2000) {
+                    tier = '🔥 BERSERKER 🔥';
+                    tierClass = 'intermediate';
+                } else if (totalPowerLevel >= 1500) {
+                    tier = '⚡ WARRIOR ⚡';
+                    tierClass = 'intermediate';
+                } else if (totalPowerLevel >= 1000) {
+                    tier = '🛡️ FIGHTER 🛡️';
+                    tierClass = 'intermediate';
+                
+                // Ultra Low Tiers
+                } else if (totalPowerLevel >= 500) {
+                    tier = '🔪 BRAWLER 🔪';
+                    tierClass = 'novice';
+                } else if (totalPowerLevel >= 100) {
+                    tier = '⚔️ SCRAPPER ⚔️';
+                    tierClass = 'novice';
+                } else {
+                    tier = '🗡️ ROOKIE 🗡️';
+                    tierClass = 'novice';
                 }
                 
-                return { powerLevel: 1000, tier: '🌱 NOVICE 🌱', tierClass: 'novice' };
+                return {
+                    powerLevel: totalPowerLevel,
+                    tier,
+                    tierClass,
+                    components: {
+                        totalExperience: latestData.experience,
+                        rank: position,
+                        formula: `${latestData.experience.toLocaleString()} ÷ ${position} = ${totalPowerLevel.toLocaleString()}`
+                    }
+                };
             }
 
             showPlayerInfo(playerName, data) {
