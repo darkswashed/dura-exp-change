@@ -164,6 +164,12 @@
             position: relative;
         }
         
+        #powerLevelChartContainer {
+            margin-top: 30px;
+            height: 400px;
+            position: relative;
+        }
+        
         #positionChartContainer {
             margin-top: 30px;
             height: 400px;
@@ -304,28 +310,7 @@
             margin-bottom: 16px;
         }
 
-        .stat-highlight {
-            text-align: center;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
 
-        .stat-highlight-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 4px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-highlight-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
 
         .stat-secondary {
             display: grid;
@@ -422,6 +407,31 @@
             margin-bottom: 8px;
         }
 
+
+
+        .stat-highlight {
+            text-align: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-highlight-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 4px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-highlight-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .rank-change {
             display: inline-flex;
             align-items: center;
@@ -477,7 +487,6 @@
             .stat-highlight-value {
                 font-size: 28px;
             }
-
 
         }
         
@@ -559,6 +568,10 @@
         
         <div id="chartContainer" style="display: none;">
             <canvas id="experienceChart"></canvas>
+        </div>
+        
+        <div id="powerLevelChartContainer" style="display: none; margin-top: 30px;">
+            <canvas id="powerLevelChart"></canvas>
         </div>
         
         <div id="playerStats" class="stats" style="display: none;"></div>
@@ -669,6 +682,39 @@
             
             async loadAllSnapshotFiles() {
                 console.log('Loading CSV files from snapshots directory...');
+                
+                try {
+                    // Use server API to get all available files in the snapshots directory
+                    const response = await fetch('/api/snapshots');
+                    if (!response.ok) {
+                        throw new Error(`Failed to load snapshots directory: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    const availableFiles = data.files || [];
+                    
+                    console.log(`Found ${availableFiles.length} CSV files in snapshots directory`);
+                    
+                    // Sort by date (oldest first)
+                    availableFiles.sort((a, b) => {
+                        const dateA = this.extractDateFromFilename(a);
+                        const dateB = this.extractDateFromFilename(b);
+                        return dateA.localeCompare(dateB);
+                    });
+                    
+                    this.csvFiles = availableFiles;
+                    console.log(`Total CSV files found: ${this.csvFiles.length}`);
+                    console.log('Files:', this.csvFiles.map(f => this.extractDateFromFilename(f)));
+                    
+                } catch (error) {
+                    console.warn('Failed to load from server API, falling back to date-based discovery:', error.message);
+                    // Fallback to original method if server API is unavailable
+                    await this.loadAllSnapshotFilesFallback();
+                }
+            }
+
+            async loadAllSnapshotFilesFallback() {
+                console.log('Using fallback method: checking individual files...');
                 
                 const availableFiles = [];
                 
@@ -856,8 +902,8 @@
                 }
                 
                 this.showPlayerInfo(playerName, playerData);
-                this.showPlayerStats(playerName, playerData);
                 this.createChart(playerName, playerData);
+                this.createPowerLevelChart(playerName, playerData);
                 this.createPositionChart(playerName, playerData);
             }
 
@@ -1073,15 +1119,27 @@
                 const oldestData = data[0];
                 const shareableURL = this.generateShareableURL(playerName);
 
-                // Calculate daily change
+                // Calculate 1-day change (latest change)
                 const dailyChange = data.length >= 2 ? 
                     latestData.experience - data[data.length - 2].experience : 0;
                 
-                // Calculate best day
+                // Calculate 7-day change
+                const weeklyChange = data.length >= 8 ? 
+                    latestData.experience - data[data.length - 8].experience : 
+                    (data.length >= 2 ? latestData.experience - oldestData.experience : 0);
+                
+                // Calculate 30-day change
+                const monthlyChange = data.length >= 31 ? 
+                    latestData.experience - data[data.length - 31].experience : 
+                    (data.length >= 2 ? latestData.experience - oldestData.experience : 0);
+                
+                // Calculate best day and worst day
                 let bestDay = 0;
+                let worstDay = 0;
                 for (let i = 1; i < data.length; i++) {
-                    const gain = data[i].experience - data[i - 1].experience;
-                    if (gain > bestDay) bestDay = gain;
+                    const change = data[i].experience - data[i - 1].experience;
+                    if (change > bestDay) bestDay = change;
+                    if (change < worstDay) worstDay = change;
                 }
                 
                 // Calculate current position and position change
@@ -1090,7 +1148,14 @@
                 // Calculate Power Level
                 const powerData = this.calculatePowerLevel(playerName, data);
                 
-
+                // Calculate Power Level change from previous day
+                let powerLevelChange = 0;
+                if (data.length >= 2) {
+                    const previousData = data[data.length - 2];
+                    const previousPosition = this.calculatePlayerPosition(previousData.date, playerName).position;
+                    const previousPowerLevel = Math.round(previousData.experience / previousPosition);
+                    powerLevelChange = powerData.powerLevel - previousPowerLevel;
+                }
                 
                 // Rank change display
                 let rankChangeDisplay = '';
@@ -1099,9 +1164,8 @@
                         rankChangeDisplay = `<span class="rank-arrow up">↗ ${Math.abs(positionChange)}</span>`;
                     } else if (positionChange > 0) {
                         rankChangeDisplay = `<span class="rank-arrow down">↘ ${positionChange}</span>`;
-                    } else {
-                        rankChangeDisplay = `<span class="rank-arrow same">→ 0</span>`;
                     }
+                    // Don't show anything for unchanged rank (positionChange === 0)
                 }
                 
                 playerInfo.innerHTML = `
@@ -1122,7 +1186,6 @@
                         </div>
                         
                         <div class="power-level-display">
-                            <div class="power-level-icon">⚡</div>
                             <div class="power-level-number">${powerData.powerLevel.toLocaleString()}</div>
                             <div class="power-level-tier ${powerData.tierClass}">${powerData.tier}</div>
                         </div>
@@ -1137,11 +1200,35 @@
                                     <span class="stat-secondary-value ${dailyChange >= 0 ? 'positive' : 'negative'}">
                                         ${dailyChange >= 0 ? '+' : ''}${dailyChange.toLocaleString()}
                                     </span>
-                                    <span class="stat-secondary-label">Latest Change</span>
+                                    <span class="stat-secondary-label">1-Day</span>
+                                </div>
+                                <div class="stat-secondary-item">
+                                    <span class="stat-secondary-value ${weeklyChange >= 0 ? 'positive' : 'negative'}">
+                                        ${weeklyChange >= 0 ? '+' : ''}${weeklyChange.toLocaleString()}
+                                    </span>
+                                    <span class="stat-secondary-label">7-Day</span>
+                                </div>
+                                <div class="stat-secondary-item">
+                                    <span class="stat-secondary-value ${monthlyChange >= 0 ? 'positive' : 'negative'}">
+                                        ${monthlyChange >= 0 ? '+' : ''}${monthlyChange.toLocaleString()}
+                                    </span>
+                                    <span class="stat-secondary-label">30-Day</span>
                                 </div>
                                 <div class="stat-secondary-item">
                                     <span class="stat-secondary-value positive">+${bestDay.toLocaleString()}</span>
                                     <span class="stat-secondary-label">Best Day</span>
+                                </div>
+                                <div class="stat-secondary-item">
+                                    <span class="stat-secondary-value ${worstDay >= 0 ? 'positive' : 'negative'}">
+                                        ${worstDay >= 0 ? '+' : ''}${worstDay.toLocaleString()}
+                                    </span>
+                                    <span class="stat-secondary-label">Worst Day</span>
+                                </div>
+                                <div class="stat-secondary-item">
+                                    <span class="stat-secondary-value ${powerLevelChange >= 0 ? 'positive' : 'negative'}">
+                                        ${powerLevelChange >= 0 ? '+' : ''}${powerLevelChange.toLocaleString()}
+                                    </span>
+                                    <span class="stat-secondary-label">Power Level</span>
                                 </div>
                                 <div class="stat-secondary-item">
                                     <span class="stat-secondary-value">
@@ -1206,96 +1293,6 @@
                 };
             }
 
-            showPlayerStats(playerName, data) {
-                const statsContainer = document.getElementById('playerStats');
-                
-                if (data.length < 1) {
-                    statsContainer.style.display = 'none';
-                    return;
-                }
-                
-                // Calculate daily changes
-                const dailyChanges = [];
-                for (let i = 1; i < data.length; i++) {
-                    dailyChanges.push(data[i].experience - data[i - 1].experience);
-                }
-                
-                const latestData = data[data.length - 1];
-                const latestExp = latestData.experience;
-                
-                // Calculate period changes with fallback to available data
-                const oneDayChange = data.length >= 2 ? data[data.length - 1].experience - data[data.length - 2].experience : 0;
-                
-                // For 7-day change: use up to 7 days back, or furthest available
-                let sevenDayChange = null;
-                if (data.length >= 2) {
-                    const daysBack = Math.min(7, data.length - 1);
-                    const targetIndex = data.length - 1 - daysBack;
-                    sevenDayChange = data[data.length - 1].experience - data[targetIndex].experience;
-                }
-                
-                // For 30-day change: use up to 30 days back, or furthest available
-                let thirtyDayChange = null;
-                if (data.length >= 2) {
-                    const daysBack = Math.min(30, data.length - 1);
-                    const targetIndex = data.length - 1 - daysBack;
-                    thirtyDayChange = data[data.length - 1].experience - data[targetIndex].experience;
-                }
-                
-                // Calculate best and worst days
-                const maxDailyGain = dailyChanges.length > 0 ? Math.max(...dailyChanges) : 0;
-                const minDailyChange = dailyChanges.length > 0 ? Math.min(...dailyChanges) : 0;
-                
-                // Calculate position and position change
-                const { position, positionChange } = this.calculatePlayerPosition(latestData.date, playerName);
-                
-                // Format change values
-                const formatChange = (change) => {
-                    if (change === null) return 'No Data';
-                    return (change >= 0 ? '+' : '') + change.toLocaleString();
-                };
-                
-                // Format position change
-                const formatPositionChange = (change) => {
-                    if (change === null || change === 0) return '';
-                    if (change > 0) return ` (↓${change})`;  // Moved down in rank (worse)
-                    return ` (↑${Math.abs(change)})`;  // Moved up in rank (better)
-                };
-                
-                statsContainer.innerHTML = `
-                    <div class="stat-card">
-                        <div class="stat-value">${latestExp.toLocaleString()}</div>
-                        <div class="stat-label">Current Experience</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${formatChange(oneDayChange)}</div>
-                        <div class="stat-label">1 Day Change</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${formatChange(sevenDayChange)}</div>
-                        <div class="stat-label">7 Day Change</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${formatChange(thirtyDayChange)}</div>
-                        <div class="stat-label">30 Day Change</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">+${maxDailyGain.toLocaleString()}</div>
-                        <div class="stat-label">Best Day</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">${formatChange(minDailyChange)}</div>
-                        <div class="stat-label">Worst Day</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">#${position}</div>
-                        <div class="stat-label">Current Position</div>
-                    </div>
-                `;
-                
-                statsContainer.style.display = 'grid';
-            }
-            
             createChart(playerName, data) {
                 const ctx = document.getElementById('experienceChart').getContext('2d');
                 
@@ -1436,6 +1433,131 @@
                 });
                 
                 document.getElementById('chartContainer').style.display = 'block';
+            }
+            
+            createPowerLevelChart(playerName, data) {
+                const ctx = document.getElementById('powerLevelChart').getContext('2d');
+                
+                // Destroy existing chart if it exists
+                if (this.powerLevelChart) {
+                    this.powerLevelChart.destroy();
+                }
+                
+                // Calculate cumulative power levels for each day
+                const labels = [];
+                const powerLevels = [];
+                
+                for (let i = 0; i < data.length; i++) {
+                    const currentData = data[i];
+                    
+                    // Calculate power level for this day
+                    const currentPosition = this.calculatePlayerPosition(currentData.date, playerName).position;
+                    const powerLevel = Math.round(currentData.experience / currentPosition);
+                    
+                    labels.push(currentData.date);
+                    powerLevels.push(powerLevel);
+                }
+                
+                this.powerLevelChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Power Level',
+                            data: powerLevels,
+                            borderColor: '#9b59b6',
+                            backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#9b59b6',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `${playerName} - Power Level Over Time`,
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: '#9b59b6',
+                                borderWidth: 1,
+                                callbacks: {
+                                    title: function(context) {
+                                        return `Date: ${context[0].label}`;
+                                    },
+                                    label: function(context) {
+                                        const dataIndex = context.dataIndex;
+                                        const currentValue = context.parsed.y;
+                                        
+                                        if (dataIndex === 0) {
+                                            return `Power Level: ${currentValue.toLocaleString()}`;
+                                        }
+                                        
+                                        const previousValue = powerLevels[dataIndex - 1];
+                                        const change = currentValue - previousValue;
+                                        const changePrefix = change >= 0 ? '+' : '';
+                                        
+                                        return [
+                                            `Power Level: ${currentValue.toLocaleString()}`,
+                                            `Daily Change: ${changePrefix}${change.toLocaleString()}`
+                                        ];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                },
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Power Level'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString();
+                                    }
+                                },
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                });
+                
+                document.getElementById('powerLevelChartContainer').style.display = 'block';
             }
             
             createPositionChart(playerName, data) {
