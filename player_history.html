@@ -363,99 +363,91 @@
             letter-spacing: 0.3px;
         }
 
-        .player-card-achievements {
-            margin-bottom: 12px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
+        /* Power Level Styles */
+        .power-level-display {
+            text-align: center;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 12px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .achievements-title {
+        .power-level-display::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 12px;
+            padding: 2px;
+            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb, #f5576c);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            pointer-events: none;
+            animation: power-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes power-glow {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        .power-level-number {
+            font-size: 32px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .power-level-tier {
             font-size: 14px;
             font-weight: bold;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-            text-align: center;
-        }
-
-        .achievements-showcase {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .achievement-mini {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 10px;
-            background: var(--bg-secondary);
-            border-radius: 16px;
-            border: 2px solid;
-            transition: all 0.3s ease;
-            min-width: 100px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .achievement-mini:hover {
-            transform: scale(1.02);
-        }
-
-        .achievement-mini.rarity-common { 
-            border-color: #95a5a6; 
-            background: linear-gradient(135deg, rgba(149, 165, 166, 0.1), var(--bg-secondary));
-        }
-        .achievement-mini.rarity-uncommon { 
-            border-color: #3498db; 
-            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), var(--bg-secondary));
-        }
-        .achievement-mini.rarity-rare { 
-            border-color: #9b59b6; 
-            background: linear-gradient(135deg, rgba(155, 89, 182, 0.1), var(--bg-secondary));
-        }
-        .achievement-mini.rarity-epic { 
-            border-color: #e67e22; 
-            background: linear-gradient(135deg, rgba(230, 126, 34, 0.1), var(--bg-secondary));
-        }
-        .achievement-mini.rarity-legendary { 
-            border-color: #f1c40f; 
-            background: linear-gradient(135deg, rgba(241, 196, 15, 0.1), var(--bg-secondary));
-        }
-        .achievement-mini.rarity-mythic { 
-            border-color: #e74c3c; 
-            background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), var(--bg-secondary));
-        }
-
-        .achievement-mini-badge {
-            font-size: 16px;
-            filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
-        }
-
-        .achievement-mini-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .achievement-mini-name {
-            font-size: 11px;
-            font-weight: bold;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-        }
-
-        .achievement-mini-rarity {
-            font-size: 9px;
-            color: var(--text-primary);
             text-transform: uppercase;
-            font-weight: 600;
-            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7);
-            opacity: 0.9;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
         }
+
+        .power-level-tier.legendary { color: #f1c40f; text-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
+        .power-level-tier.elite { color: #e67e22; text-shadow: 0 0 10px rgba(230, 126, 34, 0.5); }
+        .power-level-tier.expert { color: #9b59b6; text-shadow: 0 0 10px rgba(155, 89, 182, 0.5); }
+        .power-level-tier.advanced { color: #3498db; text-shadow: 0 0 10px rgba(52, 152, 219, 0.5); }
+        .power-level-tier.intermediate { color: #2ecc71; text-shadow: 0 0 10px rgba(46, 204, 113, 0.5); }
+        .power-level-tier.novice { color: #95a5a6; }
+
+        .power-level-icon {
+            font-size: 20px;
+            margin-bottom: 8px;
+            animation: power-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes power-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .rank-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .rank-arrow {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .rank-arrow.up { color: #28a745; }
+        .rank-arrow.down { color: #dc3545; }
+        .rank-arrow.same { color: var(--text-secondary); }
 
         .player-card-footer {
             text-align: center;
@@ -498,14 +490,7 @@
                 font-size: 28px;
             }
 
-            .achievements-showcase {
-                flex-direction: column;
-                align-items: center;
-            }
 
-            .achievement-mini {
-                min-width: 200px;
-            }
         }
         
         .back-link {
@@ -559,229 +544,7 @@
             transition: color 0.3s ease;
         }
 
-        /* Achievement Styles */
-        .achievements-section {
-            margin: 30px 0;
-            padding: 25px;
-            background: var(--bg-tertiary);
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
-        }
 
-        .achievements-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            font-size: 18px;
-            font-weight: bold;
-            color: var(--text-primary);
-        }
-
-        .achievements-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .achievement-summary-card {
-            background: var(--bg-secondary);
-            padding: 15px;
-            border-radius: 6px;
-            text-align: center;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-        }
-
-        .achievement-summary-card:hover {
-            border-color: var(--border-focus);
-        }
-
-        .achievement-summary-value {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .achievement-summary-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-        }
-
-        .achievements-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .achievement-tab {
-            padding: 8px 16px;
-            background: var(--bg-secondary);
-            border: 2px solid var(--border-color);
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-primary);
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .achievement-tab:hover {
-            border-color: var(--border-focus);
-        }
-
-        .achievement-tab.active {
-            background: var(--border-focus);
-            color: white;
-            border-color: var(--border-focus);
-        }
-
-        .achievements-content {
-            min-height: 200px;
-        }
-
-        .achievement-category {
-            display: none;
-        }
-
-        .achievement-category.active {
-            display: block;
-        }
-
-        .achievement-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 15px;
-        }
-
-        .achievement-card {
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            padding: 15px;
-            border-left: 4px solid #95a5a6;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .achievement-card.earned {
-            border-left-color: #28a745;
-            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
-        }
-
-        .achievement-card.progress {
-            border-left-color: #17a2b8;
-        }
-
-        .achievement-card.rarity-common { border-left-color: #95a5a6; }
-        .achievement-card.rarity-uncommon { border-left-color: #3498db; }
-        .achievement-card.rarity-rare { border-left-color: #9b59b6; }
-        .achievement-card.rarity-epic { border-left-color: #e67e22; }
-        .achievement-card.rarity-legendary { border-left-color: #f1c40f; }
-        .achievement-card.rarity-mythic { border-left-color: #e74c3c; }
-
-        .achievement-header-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-
-        .achievement-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: bold;
-            color: var(--text-primary);
-        }
-
-        .achievement-badge {
-            font-size: 20px;
-            filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3));
-        }
-
-        .achievement-rarity {
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .rarity-common { background: #95a5a6; color: white; }
-        .rarity-uncommon { background: #3498db; color: white; }
-        .rarity-rare { background: #9b59b6; color: white; }
-        .rarity-epic { background: #e67e22; color: white; }
-        .rarity-legendary { background: #f1c40f; color: black; }
-        .rarity-mythic { background: #e74c3c; color: white; }
-
-        .achievement-description {
-            color: var(--text-secondary);
-            font-size: 13px;
-            margin-bottom: 8px;
-        }
-
-        .achievement-date {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-style: italic;
-        }
-
-        .achievement-progress-bar {
-            width: 100%;
-            height: 6px;
-            background: var(--border-color);
-            border-radius: 3px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-
-        .achievement-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #17a2b8, #007bff);
-            border-radius: 3px;
-            transition: width 0.3s ease;
-        }
-
-        .achievement-progress-text {
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-            text-align: right;
-        }
-
-        .no-achievements {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-secondary);
-        }
-
-        .no-achievements-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-            opacity: 0.5;
-        }
-
-        @media (max-width: 768px) {
-            .achievements-tabs {
-                justify-content: center;
-            }
-            
-            .achievement-tab {
-                font-size: 12px;
-                padding: 6px 12px;
-            }
-            
-            .achievement-grid {
-                grid-template-columns: 1fr;
-            }
-        }
     </style>
 </head>
 <body>
@@ -816,39 +579,7 @@
             <canvas id="positionChart"></canvas>
         </div>
         
-        <div id="achievementsSection" class="achievements-section" style="display: none;">
-            <div class="achievements-header">
-                🏅 Player Achievements
-            </div>
-            
-            <div id="achievementsSummary" class="achievements-summary"></div>
-            
-            <div class="achievements-tabs">
-                <div class="achievement-tab active" data-category="all">
-                    🏆 All Achievements
-                </div>
-                <div class="achievement-tab" data-category="xpMilestones">
-                    📊 Experience
-                </div>
-                <div class="achievement-tab" data-category="dailyProgress">
-                    📈 Progress
-                </div>
-                <div class="achievement-tab" data-category="ranking">
-                    🏆 Ranking
-                </div>
-                <div class="achievement-tab" data-category="growthRate">
-                    🚀 Growth
-                </div>
-                <div class="achievement-tab" data-category="specialPatterns">
-                    🎯 Special
-                </div>
-                <div class="achievement-tab" data-category="comparative">
-                    👥 Competitive
-                </div>
-            </div>
-            
-            <div id="achievementsContent" class="achievements-content"></div>
-        </div>
+
     </div>
 
     <script>
@@ -887,107 +618,7 @@
         // Register Chart.js plugins
         Chart.register(window['chartjs-plugin-annotation']);
 
-        // Achievement System
-        const ACHIEVEMENTS = {
-            xpMilestones: {
-                name: "Experience Milestones",
-                icon: "📊",
-                description: "Reach experience milestones",
-                levels: [
-                    {threshold: 100000, name: "First 100K", badge: "🌱", rarity: "Common"},
-                    {threshold: 500000, name: "Half Million", badge: "🌿", rarity: "Common"},
-                    {threshold: 1000000, name: "First Million", badge: "🥉", rarity: "Common"},
-                    {threshold: 5000000, name: "Five Million", badge: "�", rarity: "Common"},
-                    {threshold: 10000000, name: "Ten Million", badge: "🥈", rarity: "Uncommon"},
-                    {threshold: 20000000, name: "Twenty Million", badge: "🥈", rarity: "Uncommon"},
-                    {threshold: 50000000, name: "Fifty Million", badge: "�", rarity: "Uncommon"},
-                    {threshold: 100000000, name: "Hundred Million", badge: "🥇", rarity: "Rare"},
-                    {threshold: 200000000, name: "Two Hundred Million", badge: "🥇", rarity: "Rare"},
-                    {threshold: 300000000, name: "Three Hundred Million", badge: "🥇", rarity: "Rare"},
-                    {threshold: 500000000, name: "Half Billion", badge: "💎", rarity: "Epic"},
-                    {threshold: 1000000000, name: "Billionaire", badge: "👑", rarity: "Legendary"}
-                ]
-            },
-            dailyProgress: {
-                name: "Daily Progress",
-                icon: "📈",
-                description: "Daily and weekly achievements",
-                achievements: [
-                    {id: "consistent_grinder", name: "Consistent Grinder", badge: "⚡", description: "7+ consecutive days of XP gains", rarity: "Uncommon"},
-                    {id: "weekend_warrior", name: "Weekend Warrior", badge: "🏖️", description: "Highest gains on weekends", rarity: "Common"},
-                    {id: "power_week", name: "Power Week", badge: "💪", description: "100M+ XP gained in 7 days", rarity: "Rare"},
-                    {id: "marathon_month", name: "Marathon Month", badge: "🏃", description: "500M+ XP gained in 30 days", rarity: "Epic"},
-                    {id: "perfect_week", name: "Perfect Week", badge: "✨", description: "XP gain every day for 7 days", rarity: "Rare"}
-                ]
-            },
-            ranking: {
-                name: "Ranking Achievements",
-                icon: "🏆",
-                description: "Leaderboard position achievements",
-                levels: [
-                    {threshold: 1000, name: "Top 1000", badge: "🏅", rarity: "Common", comparison: "<="},
-                    {threshold: 500, name: "Elite 500", badge: "🎖️", rarity: "Uncommon", comparison: "<="},
-                    {threshold: 100, name: "Top 100", badge: "🏆", rarity: "Rare", comparison: "<="},
-                    {threshold: 50, name: "Elite 50", badge: "👑", rarity: "Epic", comparison: "<="},
-                    {threshold: 10, name: "Top 10", badge: "⭐", rarity: "Legendary", comparison: "<="},
-                    {threshold: 1, name: "Champion", badge: "🌟", rarity: "Mythic", comparison: "<="}
-                ],
-                achievements: [
-                    {id: "climber_100", name: "Climber", badge: "🧗", description: "Improve rank by 100+ positions", rarity: "Common"},
-                    {id: "climber_500", name: "Mountain Climber", badge: "⛰️", description: "Improve rank by 500+ positions", rarity: "Uncommon"},
-                    {id: "climber_1000", name: "Peak Conqueror", badge: "🏔️", description: "Improve rank by 1000+ positions", rarity: "Rare"},
-                    {id: "steady_rise", name: "Steady Rise", badge: "📈", description: "Maintain upward trend for 7+ days", rarity: "Uncommon"}
-                ]
-            },
-            growthRate: {
-                name: "Growth Rate",
-                icon: "🚀",
-                description: "Experience growth achievements",
-                achievements: [
-                    {id: "speed_demon", name: "Speed Demon", badge: "💨", description: "50M+ XP in single day", rarity: "Rare"},
-                    {id: "explosive_growth", name: "Explosive Growth", badge: "💥", description: "100M+ XP in single day", rarity: "Epic"},
-                    {id: "mega_grind", name: "Mega Grind", badge: "🔥", description: "200M+ XP in single day", rarity: "Legendary"},
-                    {id: "acceleration", name: "Acceleration", badge: "⚡", description: "Increasing daily gains for 5+ days", rarity: "Uncommon"},
-                    {id: "efficiency_expert", name: "Efficiency Expert", badge: "⚙️", description: "Consistent 10M+ daily gains for 7+ days", rarity: "Rare"},
-                    {id: "late_bloomer", name: "Late Bloomer", badge: "🌱", description: "Biggest single-day improvement after 14+ days", rarity: "Common"}
-                ]
-            },
-            specialPatterns: {
-                name: "Special Patterns",
-                icon: "🎯",
-                description: "Unique pattern achievements",
-                achievements: [
-                    {id: "milestone_hunter", name: "Milestone Hunter", badge: "🎯", description: "Hit 3+ major milestones in 30 days", rarity: "Rare"},
-                    {id: "round_number_100m", name: "Perfect Hundred", badge: "💯", description: "Reach exactly 100,000,000 XP", rarity: "Uncommon"},
-                    {id: "round_number_500m", name: "Perfect Five Hundred", badge: "5️⃣", description: "Reach exactly 500,000,000 XP", rarity: "Rare"},
-                    {id: "round_number_1b", name: "Perfect Billion", badge: "🎰", description: "Reach exactly 1,000,000,000 XP", rarity: "Epic"},
-                    {id: "lucky_777", name: "Lucky 777", badge: "🍀", description: "XP ending in 777", rarity: "Common"},
-                    {id: "lucky_888", name: "Lucky 888", badge: "🎱", description: "XP ending in 888", rarity: "Common"},
-                    {id: "lucky_999", name: "Lucky 999", badge: "🎲", description: "XP ending in 999", rarity: "Common"},
-                    {id: "balanced_growth", name: "Balanced Growth", badge: "⚖️", description: "Maintain steady daily gains (±20%) for 7+ days", rarity: "Rare"}
-                ]
-            },
-            comparative: {
-                name: "Competitive",
-                icon: "👥", 
-                description: "Achievements based on comparison with others",
-                achievements: [
-                    {id: "giant_slayer", name: "Giant Slayer", badge: "⚔️", description: "Overtake someone 1000+ ranks above in single day", rarity: "Epic"},
-                    {id: "comeback_kid", name: "Comeback Kid", badge: "🔄", description: "Return to previous high rank after 7+ day decline", rarity: "Rare"},
-                    {id: "never_give_up", name: "Never Give Up", badge: "💪", description: "Continue gaining XP after rank drops", rarity: "Common"},
-                    {id: "steady_eddie", name: "Steady Eddie", badge: "🛡️", description: "Never drop more than 10% in experience over 14+ days", rarity: "Uncommon"}
-                ]
-            }
-        };
-
-        const RARITY_COLORS = {
-            "Common": "#95a5a6",
-            "Uncommon": "#3498db", 
-            "Rare": "#9b59b6",
-            "Epic": "#e67e22",
-            "Legendary": "#f1c40f",
-            "Mythic": "#e74c3c"
-        };
+        // Achievement System removed
 
         class PlayerHistoryTracker {
             constructor() {
@@ -1279,23 +910,13 @@
                     return;
                 }
                 
-                // Calculate achievements
-                const achievements = this.calculateAchievements(playerName, playerData);
-                
                 this.showPlayerInfo(playerName, playerData);
                 this.showPlayerStats(playerName, playerData);
-                this.showAchievements(playerName, achievements);
                 this.createChart(playerName, playerData);
                 this.createPositionChart(playerName, playerData);
             }
 
-            calculateAchievements(playerName, playerData) {
-                const achievements = {
-                    earned: [],
-                    progress: []
-                };
-
-                // Calculate daily changes for analysis
+            // Achievements system removed
                 const dailyChanges = [];
                 const positions = [];
                 for (let i = 0; i < playerData.length; i++) {
@@ -2039,39 +1660,128 @@
                 return history;
             }
             
+            calculatePowerLevel(playerName, data) {
+                if (data.length < 2) return { powerLevel: 1000, tier: 'novice', tierClass: 'novice' };
+
+                const latestData = data[data.length - 1];
+                
+                // Get total players for rank calculation
+                const latestDate = latestData.date;
+                const playersOnLatestDate = this.csvData.get(latestDate);
+                const totalPlayers = playersOnLatestDate ? playersOnLatestDate.size : 100;
+                
+                // Calculate current position
+                const { position } = this.calculatePlayerPosition(latestDate, playerName);
+                
+                // 1. Rank Weight (40%)
+                const rankScore = ((totalPlayers - position + 1) / totalPlayers) * 4000;
+                
+                // 2. Recent Performance (30%) - last 7 days vs historical average
+                const recentDays = Math.min(7, data.length - 1);
+                let recentGains = 0;
+                let historicalAvg = 0;
+                
+                if (data.length > 1) {
+                    // Recent gains
+                    for (let i = Math.max(1, data.length - recentDays); i < data.length; i++) {
+                        recentGains += data[i].experience - data[i - 1].experience;
+                    }
+                    recentGains = recentGains / recentDays;
+                    
+                    // Historical average
+                    let totalGains = 0;
+                    for (let i = 1; i < data.length; i++) {
+                        totalGains += data[i].experience - data[i - 1].experience;
+                    }
+                    historicalAvg = totalGains / (data.length - 1);
+                    
+                    // Performance multiplier
+                    const performanceRatio = historicalAvg > 0 ? Math.max(0.5, Math.min(2, recentGains / historicalAvg)) : 1;
+                    const performanceScore = performanceRatio * 3000;
+                    
+                    // 3. Consistency Score (20%)
+                    const dailyGains = [];
+                    for (let i = 1; i < data.length; i++) {
+                        dailyGains.push(data[i].experience - data[i - 1].experience);
+                    }
+                    
+                    const avgGain = dailyGains.reduce((a, b) => a + b, 0) / dailyGains.length;
+                    const variance = dailyGains.reduce((acc, gain) => acc + Math.pow(gain - avgGain, 2), 0) / dailyGains.length;
+                    const consistencyScore = Math.max(0, 2000 - (variance / 10000)); // Lower variance = higher score
+                    
+                    // 4. Elite Bonuses (10%)
+                    let eliteBonus = 0;
+                    
+                    // Milestone bonuses
+                    const exp = latestData.experience;
+                    if (exp >= 10000000000) eliteBonus += 300; // 10B+
+                    else if (exp >= 5000000000) eliteBonus += 200; // 5B+
+                    else if (exp >= 1000000000) eliteBonus += 100; // 1B+
+                    else if (exp >= 500000000) eliteBonus += 50; // 500M+
+                    
+                    // Top rank bonuses
+                    if (position <= 5) eliteBonus += 500;
+                    else if (position <= 10) eliteBonus += 300;
+                    else if (position <= 25) eliteBonus += 150;
+                    
+                    // Streak bonus (consecutive positive days)
+                    let currentStreak = 0;
+                    for (let i = dailyGains.length - 1; i >= 0; i--) {
+                        if (dailyGains[i] > 0) currentStreak++;
+                        else break;
+                    }
+                    if (currentStreak >= 10) eliteBonus += 200;
+                    else if (currentStreak >= 5) eliteBonus += 100;
+                    
+                    const totalPowerLevel = Math.round(rankScore + performanceScore + consistencyScore + eliteBonus);
+                    
+                    // Determine tier
+                    let tier, tierClass;
+                    if (totalPowerLevel >= 9000) {
+                        tier = '✨ LEGENDARY ✨';
+                        tierClass = 'legendary';
+                    } else if (totalPowerLevel >= 7000) {
+                        tier = '⭐ ELITE ⭐';
+                        tierClass = 'elite';
+                    } else if (totalPowerLevel >= 5000) {
+                        tier = '🔥 EXPERT 🔥';
+                        tierClass = 'expert';
+                    } else if (totalPowerLevel >= 3000) {
+                        tier = '📈 ADVANCED 📈';
+                        tierClass = 'advanced';
+                    } else if (totalPowerLevel >= 1000) {
+                        tier = '⚡ INTERMEDIATE ⚡';
+                        tierClass = 'intermediate';
+                    } else {
+                        tier = '🌱 NOVICE 🌱';
+                        tierClass = 'novice';
+                    }
+                    
+                    return {
+                        powerLevel: totalPowerLevel,
+                        tier,
+                        tierClass,
+                        components: {
+                            rankScore: Math.round(rankScore),
+                            performanceScore: Math.round(performanceScore),
+                            consistencyScore: Math.round(consistencyScore),
+                            eliteBonus: Math.round(eliteBonus)
+                        }
+                    };
+                }
+                
+                return { powerLevel: 1000, tier: '🌱 NOVICE 🌱', tierClass: 'novice' };
+            }
+
             showPlayerInfo(playerName, data) {
                 const playerInfo = document.getElementById('playerInfo');
                 const latestData = data[data.length - 1];
                 const oldestData = data[0];
                 const shareableURL = this.generateShareableURL(playerName);
-                
-                // Calculate achievements for the card
-                const achievements = this.calculateAchievements(playerName, data);
-                
-                // Get top 3 achievements (prioritize by rarity and recency)
-                const topAchievements = achievements.earned
-                    .sort((a, b) => {
-                        const rarityOrder = { 'Mythic': 6, 'Legendary': 5, 'Epic': 4, 'Rare': 3, 'Uncommon': 2, 'Common': 1 };
-                        const rarityDiff = (rarityOrder[b.rarity] || 0) - (rarityOrder[a.rarity] || 0);
-                        if (rarityDiff !== 0) return rarityDiff;
-                        
-                        // If same rarity, prefer more recent
-                        if (a.unlockedDate && b.unlockedDate) {
-                            return new Date(b.unlockedDate) - new Date(a.unlockedDate);
-                        }
-                        return a.unlockedDate ? -1 : 1;
-                    })
-                    .slice(0, 3);
 
                 // Calculate daily change
                 const dailyChange = data.length >= 2 ? 
                     latestData.experience - data[data.length - 2].experience : 0;
-                
-                // Calculate total progress
-                const totalProgress = latestData.experience - oldestData.experience;
-                
-                // Calculate average daily gain
-                const avgDailyGain = data.length > 1 ? totalProgress / (data.length - 1) : 0;
                 
                 // Calculate best day
                 let bestDay = 0;
@@ -2080,8 +1790,59 @@
                     if (gain > bestDay) bestDay = gain;
                 }
                 
-                // Calculate current position
-                const { position } = this.calculatePlayerPosition(latestData.date, playerName);
+                // Calculate current position and position change
+                const { position, positionChange } = this.calculatePlayerPosition(latestData.date, playerName);
+                
+                // Calculate Power Level
+                const powerData = this.calculatePowerLevel(playerName, data);
+                
+                // Calculate current streak
+                let currentStreak = 0;
+                for (let i = data.length - 1; i >= 1; i--) {
+                    const gain = data[i].experience - data[i - 1].experience;
+                    if (gain > 0) currentStreak++;
+                    else break;
+                }
+                
+                // Calculate next milestone
+                const exp = latestData.experience;
+                let nextMilestone, progress;
+                if (exp < 100000000) { // < 100M
+                    nextMilestone = 100000000;
+                } else if (exp < 500000000) { // < 500M
+                    nextMilestone = 500000000;
+                } else if (exp < 1000000000) { // < 1B
+                    nextMilestone = 1000000000;
+                } else if (exp < 2000000000) { // < 2B
+                    nextMilestone = 2000000000;
+                } else if (exp < 5000000000) { // < 5B
+                    nextMilestone = 5000000000;
+                } else if (exp < 10000000000) { // < 10B
+                    nextMilestone = 10000000000;
+                } else {
+                    // For 10B+, next milestone is +5B
+                    nextMilestone = Math.ceil(exp / 5000000000) * 5000000000 + 5000000000;
+                }
+                progress = ((exp / nextMilestone) * 100);
+                
+                // Format milestone display
+                const formatMilestone = (num) => {
+                    if (num >= 1000000000) return `${(num / 1000000000).toFixed(0)}B`;
+                    if (num >= 1000000) return `${(num / 1000000).toFixed(0)}M`;
+                    return num.toLocaleString();
+                };
+                
+                // Rank change display
+                let rankChangeDisplay = '';
+                if (positionChange !== null) {
+                    if (positionChange < 0) {
+                        rankChangeDisplay = `<span class="rank-arrow up">↗ ${Math.abs(positionChange)}</span>`;
+                    } else if (positionChange > 0) {
+                        rankChangeDisplay = `<span class="rank-arrow down">↘ ${positionChange}</span>`;
+                    } else {
+                        rankChangeDisplay = `<span class="rank-arrow same">→ 0</span>`;
+                    }
+                }
                 
                 playerInfo.innerHTML = `
                     <div class="player-card">
@@ -2100,6 +1861,12 @@
                             </div>
                         </div>
                         
+                        <div class="power-level-display">
+                            <div class="power-level-icon">⚡</div>
+                            <div class="power-level-number">${powerData.powerLevel.toLocaleString()}</div>
+                            <div class="power-level-tier ${powerData.tierClass}">${powerData.tier}</div>
+                        </div>
+                        
                         <div class="player-card-stats">
                             <div class="stat-highlight">
                                 <div class="stat-highlight-value">${latestData.experience.toLocaleString()}</div>
@@ -2113,40 +1880,31 @@
                                     <span class="stat-secondary-label">Latest Change</span>
                                 </div>
                                 <div class="stat-secondary-item">
-                                    <span class="stat-secondary-value">${avgDailyGain.toLocaleString()}</span>
-                                    <span class="stat-secondary-label">Avg Daily Gain</span>
-                                </div>
-                                <div class="stat-secondary-item">
                                     <span class="stat-secondary-value positive">+${bestDay.toLocaleString()}</span>
                                     <span class="stat-secondary-label">Best Day</span>
                                 </div>
                                 <div class="stat-secondary-item">
-                                    <span class="stat-secondary-value">#${position}</span>
+                                    <span class="stat-secondary-value">
+                                        <span class="rank-change">
+                                            #${position} ${rankChangeDisplay}
+                                        </span>
+                                    </span>
                                     <span class="stat-secondary-label">Current Rank</span>
+                                </div>
+                                <div class="stat-secondary-item">
+                                    <span class="stat-secondary-value positive">${currentStreak}</span>
+                                    <span class="stat-secondary-label">Streak Days</span>
+                                </div>
+                                <div class="stat-secondary-item">
+                                    <span class="stat-secondary-value">${formatMilestone(nextMilestone)}</span>
+                                    <span class="stat-secondary-label">Next Milestone</span>
                                 </div>
                             </div>
                         </div>
                         
-                        ${topAchievements.length > 0 ? `
-                        <div class="player-card-achievements">
-                            <div class="achievements-title">🏆 Recent Achievements</div>
-                            <div class="achievements-showcase">
-                                ${topAchievements.map(achievement => `
-                                    <div class="achievement-mini rarity-${achievement.rarity.toLowerCase()}">
-                                        <div class="achievement-mini-badge">${achievement.badge}</div>
-                                        <div class="achievement-mini-info">
-                                            <div class="achievement-mini-name">${achievement.name}</div>
-                                            <div class="achievement-mini-rarity">${achievement.rarity}</div>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ` : ''}
-                        
                         <div class="player-card-footer">
                             <div class="tracking-period">
-                                <span>📅 ${oldestData.date} → ${latestData.date}</span>
+                                <span>📅 ${oldestData.date} → ${latestData.date} (${data.length} days tracked)</span>
                             </div>
                         </div>
                     </div>
@@ -2297,9 +2055,6 @@
                 console.log(`Creating chart for ${playerName} with ${data.length} data points:`);
                 console.log('Data points:', data.map(d => `${d.date}: ${d.experience}`));
 
-                // Calculate achievements for markers
-                const achievements = this.calculateAchievements(playerName, data);
-                
                 // Create daily changes chart with ALL data points
                 const labels = data.map(d => d.date);
                 const dailyChanges = [];
