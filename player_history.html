@@ -389,12 +389,6 @@
             mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
             mask-composite: exclude;
             pointer-events: none;
-            animation: power-glow 3s ease-in-out infinite;
-        }
-
-        @keyframes power-glow {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; }
         }
 
         .power-level-number {
@@ -426,12 +420,6 @@
         .power-level-icon {
             font-size: 20px;
             margin-bottom: 8px;
-            animation: power-pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes power-pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
         }
 
         .rank-change {
@@ -682,18 +670,21 @@
             async loadAllSnapshotFiles() {
                 console.log('Loading CSV files from snapshots directory...');
                 
-                // Known files that exist in the workspace
-                const knownFiles = [
-                    'snapshots/highscores_2025-10-02.csv',
-                    'snapshots/highscores_2025-10-03.csv', 
-                    'snapshots/highscores_2025-10-04.csv',
-                    'snapshots/highscores_2025-10-05.csv'
-                ];
-                
                 const availableFiles = [];
                 
-                // Check each known file quickly
-                for (const filename of knownFiles) {
+                // Check for files over a wider date range (last 6 months)
+                const today = new Date();
+                const startDate = new Date(today);
+                startDate.setMonth(today.getMonth() - 6); // Go back 6 months
+                
+                console.log(`Checking for CSV files from ${startDate.toISOString().split('T')[0]} to ${today.toISOString().split('T')[0]}`);
+                
+                // Generate all potential dates and check if files exist
+                const currentDate = new Date(startDate);
+                while (currentDate <= today) {
+                    const dateString = currentDate.toISOString().split('T')[0];
+                    const filename = `snapshots/highscores_${dateString}.csv`;
+                    
                     try {
                         const response = await fetch(filename, { method: 'HEAD' });
                         if (response.ok) {
@@ -701,8 +692,11 @@
                             console.log(`✓ Found: ${filename}`);
                         }
                     } catch (error) {
-                        console.log(`✗ Not found: ${filename}`);
+                        // File doesn't exist, silently continue
                     }
+                    
+                    // Move to next day
+                    currentDate.setDate(currentDate.getDate() + 1);
                 }
                 
                 // Sort by date (oldest first)
@@ -901,10 +895,14 @@
                 // Calculate current position
                 const { position } = this.calculatePlayerPosition(latestDate, playerName);
                 
-                // 1. Rank Weight (40%)
-                const rankScore = ((totalPlayers - position + 1) / totalPlayers) * 4000;
+                // 1. Rank Weight (50%) - Much more weight to leaderboard position
+                const rankScore = ((totalPlayers - position + 1) / totalPlayers) * 5000;
                 
-                // 2. Recent Performance (30%) - last 7 days vs historical average
+                // 2. Total Experience Weight (30%) - More weight to total experience
+                const maxExp = 20000000000; // 20B as reasonable max for scaling
+                const expScore = Math.min(latestData.experience / maxExp, 1) * 3000;
+                
+                // 3. Recent Performance (15%) - Reduced from 30%
                 const recentDays = Math.min(7, data.length - 1);
                 let recentGains = 0;
                 let historicalAvg = 0;
@@ -925,9 +923,9 @@
                     
                     // Performance multiplier
                     const performanceRatio = historicalAvg > 0 ? Math.max(0.5, Math.min(2, recentGains / historicalAvg)) : 1;
-                    const performanceScore = performanceRatio * 3000;
+                    const performanceScore = performanceRatio * 1500;
                     
-                    // 3. Consistency Score (20%)
+                    // 4. Consistency Score (5%) - Reduced weight
                     const dailyGains = [];
                     for (let i = 1; i < data.length; i++) {
                         dailyGains.push(data[i].experience - data[i - 1].experience);
@@ -935,9 +933,9 @@
                     
                     const avgGain = dailyGains.reduce((a, b) => a + b, 0) / dailyGains.length;
                     const variance = dailyGains.reduce((acc, gain) => acc + Math.pow(gain - avgGain, 2), 0) / dailyGains.length;
-                    const consistencyScore = Math.max(0, 2000 - (variance / 10000)); // Lower variance = higher score
+                    const consistencyScore = Math.max(0, 500 - (variance / 20000)); // Lower variance = higher score
                     
-                    // 4. Elite Bonuses (10%)
+                    // 5. Elite Bonuses (remaining weight)
                     let eliteBonus = 0;
                     
                     // Milestone bonuses
@@ -961,7 +959,7 @@
                     if (currentStreak >= 10) eliteBonus += 200;
                     else if (currentStreak >= 5) eliteBonus += 100;
                     
-                    const totalPowerLevel = Math.round(rankScore + performanceScore + consistencyScore + eliteBonus);
+                    const totalPowerLevel = Math.round(rankScore + expScore + performanceScore + consistencyScore + eliteBonus);
                     
                     // Determine tier
                     let tier, tierClass;
@@ -991,6 +989,7 @@
                         tierClass,
                         components: {
                             rankScore: Math.round(rankScore),
+                            expScore: Math.round(expScore),
                             performanceScore: Math.round(performanceScore),
                             consistencyScore: Math.round(consistencyScore),
                             eliteBonus: Math.round(eliteBonus)
