@@ -32,15 +32,26 @@ def parse_highscores(html):
     for tr in soup.find_all("tr"):
         cols = tr.find_all("td")
         if len(cols) == 4:  # Rank, Name, Level, Points
+            # Extract rank
+            rank = cols[0].get_text(strip=True).replace(",", "")
+            
+            # Extract name
             name_td = cols[1]
             name_tag = name_td.find(["a", "span"])
             if name_tag:
                 name = name_tag.get_text(strip=True)
             else:
                 name = name_td.get_text(strip=True).split("\n")[0]
+            
+            # Extract level (power level)
+            level = cols[2].get_text(strip=True).replace(",", "")
+            
+            # Extract experience points
             exp = cols[3].get_text(strip=True).replace(",", "")
-            if exp.isdigit():
-                rows.append([name, int(exp)])
+            
+            # Validate that all numeric fields are valid
+            if rank.isdigit() and level.isdigit() and exp.isdigit():
+                rows.append([name, int(rank), int(level), int(exp)])
     return rows
 
 def build_snapshot(pages=200, delay=0.05):
@@ -61,12 +72,12 @@ def save_csv(data, date=None):
     filename = os.path.join(SAVE_DIR, f"highscores_{date}.csv")
     with open(filename, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["Name", "Experience"])
+        writer.writerow(["Name", "Rank", "Level", "Experience"])
         writer.writerows(data)
     return filename
 
 def load_csv(filepath):
-    """Load CSV data into a dictionary with name as key and experience as value"""
+    """Load CSV data into a dictionary with name as key and all player data as value"""
     data = {}
     if not os.path.exists(filepath):
         print(f"Warning: {filepath} not found")
@@ -75,21 +86,44 @@ def load_csv(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            data[row["Name"]] = int(row["Experience"].replace(",", ""))
+            player_data = {
+                'experience': int(row["Experience"].replace(",", "")),
+            }
+            
+            # Handle new format with rank and level (backward compatibility)
+            if "Rank" in row and row["Rank"]:
+                player_data['rank'] = int(row["Rank"].replace(",", ""))
+            else:
+                player_data['rank'] = None
+                
+            if "Level" in row and row["Level"]:
+                player_data['level'] = int(row["Level"].replace(",", ""))
+            else:
+                player_data['level'] = None
+            
+            data[row["Name"]] = player_data
     return data
 
-def find_best_historical_data(target_days_back, max_days_back):
+def find_best_historical_data(target_days_back, max_days_back, reference_date=None):
     """
     Find the best available historical data within a range of days
     
     Args:
         target_days_back: Preferred number of days back (e.g., 7 for weekly)
         max_days_back: Maximum days to look back (e.g., 10 for weekly range)
+        reference_date: Date to use as reference point (if None, uses current Eastern date)
     
     Returns:
         tuple: (data_dict, actual_date_found, days_back_found)
     """
-    today_date = get_eastern_date()
+    if reference_date is None:
+        today_date = get_eastern_date()
+    else:
+        # Parse the reference date string if provided
+        if isinstance(reference_date, str):
+            today_date = datetime.strptime(reference_date, "%Y-%m-%d")
+        else:
+            today_date = reference_date
     
     # Start from target days back and work backwards to find available data
     for days_back in range(target_days_back, max_days_back + 1):
@@ -152,15 +186,25 @@ def get_all_available_snapshots():
     snapshot_files.sort(reverse=True)
     return snapshot_files
 
-def compare_and_generate_html(today_data, yesterday_data, output_file):
+def compare_and_generate_html(today_data, yesterday_data, output_file, reference_date=None):
     """Compare datasets and generate comprehensive HTML report with intelligent multi-period changes"""
-    today_date = get_eastern_date()
+    if reference_date is None:
+        today_date = get_eastern_date()
+        reference_date_str = today_date.strftime("%Y-%m-%d")
+    else:
+        # If reference_date is provided, use it for both display and historical data lookup
+        if isinstance(reference_date, str):
+            today_date = datetime.strptime(reference_date, "%Y-%m-%d")
+            reference_date_str = reference_date
+        else:
+            today_date = reference_date
+            reference_date_str = reference_date.strftime("%Y-%m-%d")
     
     # Find best available historical data using intelligent fallback
-    # For 7-day: look 5-10 days back (closer to actual weekly data)
-    seven_day_data, seven_day_date, seven_days_back = find_best_historical_data(5, 10)
-    # For 30-day: look 25-35 days back (closer to actual monthly data)
-    thirty_day_data, thirty_day_date, thirty_days_back = find_best_historical_data(25, 35)
+    # For 7-day: look 3-10 days back (more flexible for weekly data)
+    seven_day_data, seven_day_date, seven_days_back = find_best_historical_data(3, 10, reference_date_str)
+    # For 30-day: look 15-35 days back (more flexible for monthly data)
+    thirty_day_data, thirty_day_date, thirty_days_back = find_best_historical_data(15, 35, reference_date_str)
     
     # If no specific period data found, use oldest available as fallback
     oldest_data, oldest_date, oldest_days_back = find_oldest_available_data()
@@ -177,42 +221,98 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
     # Get list of all available snapshots for summary
     all_snapshots = get_all_available_snapshots()
     
+    # Calculate ranks for today and yesterday based on experience
+    def calculate_ranks(player_data):
+        """Calculate rank positions based on experience (highest exp = rank 1)"""
+        if not player_data:
+            return {}
+        
+        # Convert to list of (name, experience) and sort by experience (highest first)
+        player_list = []
+        for name, data in player_data.items():
+            if isinstance(data, dict):
+                experience = data.get('experience', 0)
+            else:
+                # Handle old format where data was just experience value
+                experience = data
+            player_list.append((name, experience))
+        
+        # Sort by experience (highest first)
+        player_list.sort(key=lambda x: x[1], reverse=True)
+        
+        # Create rank mapping
+        rank_mapping = {}
+        for rank, (name, _) in enumerate(player_list, 1):
+            rank_mapping[name] = rank
+            
+        return rank_mapping
+    
+    # Get rank mappings
+    today_ranks = calculate_ranks(today_data)
+    yesterday_ranks = calculate_ranks(yesterday_data)
+    
     # Prepare comprehensive changes data
     all_players = set(today_data.keys())
     changes_data = []
     
     for name in all_players:
-        today_exp = today_data.get(name, 0)
-        yesterday_exp = yesterday_data.get(name, None)
-        seven_day_exp = seven_day_data.get(name, None)
-        thirty_day_exp = thirty_day_data.get(name, None)
+        # Get today's data
+        today_player = today_data.get(name, {})
+        if isinstance(today_player, dict):
+            today_exp = today_player.get('experience', 0)
+        else:
+            # Handle old format where data was just experience value
+            today_exp = today_player
+        
+        # Use calculated ranks
+        today_rank = today_ranks.get(name, None)
+        
+        # Get yesterday's data
+        yesterday_player = yesterday_data.get(name, {})
+        if isinstance(yesterday_player, dict):
+            yesterday_exp = yesterday_player.get('experience', None)
+        else:
+            # Handle old format where data was just experience value
+            yesterday_exp = yesterday_player if yesterday_player else None
+        
+        # Use calculated ranks
+        yesterday_rank = yesterday_ranks.get(name, None)
+        
+        # Get 7-day data
+        seven_day_player = seven_day_data.get(name, {})
+        seven_day_exp = seven_day_player.get('experience', None) if seven_day_player else None
+        
+        # Get 30-day data
+        thirty_day_player = thirty_day_data.get(name, {})
+        thirty_day_exp = thirty_day_player.get('experience', None) if thirty_day_player else None
         
         # Calculate changes
-        day_change = today_exp - yesterday_exp if yesterday_exp is not None else None
-        seven_day_change = today_exp - seven_day_exp if seven_day_exp is not None else None
-        thirty_day_change = today_exp - thirty_day_exp if thirty_day_exp is not None else None
+        exp_day_change = today_exp - yesterday_exp if yesterday_exp is not None else None
+        exp_seven_day_change = today_exp - seven_day_exp if seven_day_exp is not None else None
+        exp_thirty_day_change = today_exp - thirty_day_exp if thirty_day_exp is not None else None
+        
+        rank_day_change = yesterday_rank - today_rank if (today_rank is not None and yesterday_rank is not None) else None
         
         # Only include players who have actual experience changes (not zero or None)
-        has_changes = (
-            (day_change is not None and day_change != 0) or
-            (seven_day_change is not None and seven_day_change != 0) or
-            (thirty_day_change is not None and thirty_day_change != 0)
+        has_experience_changes = (
+            (exp_day_change is not None and exp_day_change != 0) or
+            (exp_seven_day_change is not None and exp_seven_day_change != 0) or
+            (exp_thirty_day_change is not None and exp_thirty_day_change != 0)
         )
         
-        if has_changes:
+        if has_experience_changes:
             changes_data.append({
                 'name': name,
-                'today': today_exp,
-                'yesterday': yesterday_exp,
-                'seven_days_ago': seven_day_exp,
-                'thirty_days_ago': thirty_day_exp,
-                'day_change': day_change,
-                'seven_day_change': seven_day_change,
-                'thirty_day_change': thirty_day_change
+                'today_exp': today_exp,
+                'today_rank': today_rank,
+                'exp_day_change': exp_day_change,
+                'exp_seven_day_change': exp_seven_day_change,
+                'exp_thirty_day_change': exp_thirty_day_change,
+                'rank_day_change': rank_day_change
             })
     
-    # Sort by player name alphabetically
-    changes_data.sort(key=lambda x: x['name'].lower())
+    # Sort by current rank (if available), then by name
+    changes_data.sort(key=lambda x: (x['today_rank'] or 999999, x['name'].lower()))
     
     # Generate HTML
     html_content = f"""
@@ -221,31 +321,143 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
         <meta charset="utf-8">
         <title>Dura Highscores Experience Changes</title>
         <style>
-            body {{ font-family: Arial, sans-serif; margin: 20px; background: #f5f6fa; }}
+            :root {{
+                --bg-color: #f5f6fa;
+                --text-color: #2c3e50;
+                --table-bg: #fff;
+                --table-border: #e1e8ed;
+                --header-bg: #2c3e50;
+                --header-text: #fff;
+                --row-even: #f8f9fa;
+                --row-odd: #ffffff;
+                --row-hover: #e8f4fd;
+                --link-color: #2980b9;
+                --link-hover-bg: #3498db;
+                --gain-color: #27ae60;
+                --loss-color: #e74c3c;
+                --neutral-color: #7f8c8d;
+                --na-color: #bdc3c7;
+                --button-bg: #3498db;
+                --button-text: #fff;
+                --button-hover: #2980b9;
+            }}
+
+            [data-theme="dark"] {{
+                --bg-color: #1a1a1a;
+                --text-color: #e8e8e8;
+                --table-bg: #2d2d2d;
+                --table-border: #404040;
+                --header-bg: #1e3a5f;
+                --header-text: #e8e8e8;
+                --row-even: #333333;
+                --row-odd: #2d2d2d;
+                --row-hover: #404040;
+                --link-color: #5dade2;
+                --link-hover-bg: #2980b9;
+                --gain-color: #2ecc71;
+                --loss-color: #e67e22;
+                --neutral-color: #95a5a6;
+                --na-color: #7f8c8d;
+                --button-bg: #34495e;
+                --button-text: #ecf0f1;
+                --button-hover: #2c3e50;
+            }}
+
+            body {{ 
+                font-family: Arial, sans-serif; 
+                margin: 20px; 
+                background: var(--bg-color); 
+                color: var(--text-color);
+                transition: background-color 0.3s ease, color 0.3s ease;
+            }}
+            
+            .controls {{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 20px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+            }}
+            
+            .theme-toggle {{
+                padding: 10px 20px;
+                background: var(--button-bg);
+                color: var(--button-text);
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }}
+            
+            .theme-toggle:hover {{
+                background: var(--button-hover);
+                transform: translateY(-1px);
+            }}
+            
             .header {{ text-align: center; margin-bottom: 30px; }}
+            .header h1, .header h2 {{ color: var(--text-color); }}
+            
             table {{ 
                 border-collapse: collapse; 
                 width: 100%; 
                 margin-top: 20px; 
-                background: #fff; 
+                background: var(--table-bg); 
                 border-radius: 8px;
                 overflow: hidden;
                 box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             }}
-            th, td {{ border: 1px solid #e1e8ed; padding: 12px; text-align: right; }}
+            
+            th, td {{ 
+                border: 1px solid var(--table-border); 
+                padding: 12px; 
+                text-align: right; 
+                transition: background-color 0.2s ease;
+            }}
+            
             th {{ 
-                background: #2c3e50; 
-                color: #fff; 
+                background: var(--header-bg); 
+                color: var(--header-text); 
                 text-align: center; 
                 position: sticky; 
                 top: 0; 
                 z-index: 10;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.15);
                 font-weight: 600;
+                cursor: pointer;
+                user-select: none;
+                position: relative;
             }}
+            
+            th:hover {{
+                background: color-mix(in srgb, var(--header-bg) 80%, #fff 20%);
+            }}
+            
+            th.sortable::after {{
+                content: ' ↕';
+                opacity: 0.5;
+                font-size: 12px;
+            }}
+            
+            th.sort-asc::after {{
+                content: ' ↑';
+                opacity: 1;
+                color: var(--gain-color);
+            }}
+            
+            th.sort-desc::after {{
+                content: ' ↓';
+                opacity: 1;
+                color: var(--loss-color);
+            }}
+            
             .name {{ text-align: left !important; font-weight: bold; }}
             .name a {{ 
-                color: #2980b9; 
+                color: var(--link-color); 
                 text-decoration: underline; 
                 text-decoration-color: rgba(41, 128, 185, 0.3);
                 text-underline-offset: 2px;
@@ -254,47 +466,76 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
                 border-radius: 3px;
             }}
             .name a:hover {{ 
-                color: #fff; 
-                background: #3498db; 
+                color: var(--header-text); 
+                background: var(--link-hover-bg); 
                 text-decoration: none;
                 transform: translateY(-1px);
                 box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
             }}
-            tr:nth-child(even) {{ background: #f8f9fa; }}
-            tr:nth-child(odd) {{ background: #ffffff; }}
-            tr:hover {{ background: #e8f4fd; transition: background-color 0.2s ease; }}
-            .gain {{ color: #27ae60; font-weight: bold; }}
-            .loss {{ color: #e74c3c; font-weight: bold; }}
-            .neutral {{ color: #7f8c8d; }}
-            .na {{ color: #bdc3c7; font-style: italic; }}
+            
+            tr:nth-child(even) {{ background: var(--row-even); }}
+            tr:nth-child(odd) {{ background: var(--row-odd); }}
+            tr:hover {{ background: var(--row-hover); }}
+            
+            .gain {{ color: var(--gain-color); font-weight: bold; }}
+            .loss {{ color: var(--loss-color); font-weight: bold; }}
+            .neutral {{ color: var(--neutral-color); }}
+            .na {{ color: var(--na-color); font-style: italic; }}
             .period-header {{ background: #34495e !important; position: sticky; top: 0; z-index: 10; font-weight: 600; }}
+            
+            .footer {{
+                margin-top: 30px; 
+                text-align: center; 
+                color: var(--neutral-color); 
+                font-size: 12px;
+            }}
+            
+            .footer a {{
+                color: var(--link-color);
+                text-decoration: none;
+            }}
+            
+            .footer a:hover {{
+                text-decoration: underline;
+            }}
         </style>
     </head>
-    <body>
+    <body data-theme="light">
         <div class="header">
             <h1>🎮 Dura Online Highscores Tracker</h1>
             <h2>Experience Changes - {today_date.strftime("%Y-%m-%d")}</h2>
         </div>
         
-        <table>
+        <div class="controls">
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span class="theme-icon">🌙</span>
+                <span class="theme-text">Dark Mode</span>
+            </button>
+        </div>
+        
+        <table id="highscoresTable">
             <tr>
-                <th rowspan="2" class="name">Player Name</th>
-                <th rowspan="2">Current Experience</th>
+                <th rowspan="2" class="name sortable" data-column="name">Player Name</th>
+                <th rowspan="2" class="sortable" data-column="rank">Rank</th>
+                <th rowspan="2" class="sortable" data-column="experience">Experience</th>
                 <th colspan="3" class="period-header">Experience Changes</th>
             </tr>
             <tr>
-                <th>1 Day</th>
-                <th>7 Days</th>
-                <th>30 Days</th>
+                <th class="sortable" data-column="exp-day">1 Day</th>
+                <th class="sortable" data-column="exp-week">7 Days</th>
+                <th class="sortable" data-column="exp-month">30 Days</th>
             </tr>
     """
     
     for player in changes_data:
         name = player['name']
-        today = player['today']
+        
+        # Current values
+        today_exp = player['today_exp']
+        today_rank = player['today_rank']
         
         # Format changes with appropriate styling
-        def format_change(change):
+        def format_exp_change(change):
             if change is None:
                 return '<span class="na">N/A</span>'
             elif change > 0:
@@ -304,28 +545,199 @@ def compare_and_generate_html(today_data, yesterday_data, output_file):
             else:
                 return '<span class="neutral">0</span>'
         
-        day_change_html = format_change(player['day_change'])
-        seven_day_change_html = format_change(player['seven_day_change'])
-        thirty_day_change_html = format_change(player['thirty_day_change'])
+        def format_rank_change(change):
+            if change is None:
+                return '<span class="na">N/A</span>'
+            elif change > 0:  # Rank improvement (lower number is better)
+                return f'<span class="gain">+{change:,}</span>'
+            elif change < 0:  # Rank decline (higher number is worse)
+                return f'<span class="loss">{change:,}</span>'
+            else:
+                return '<span class="neutral">0</span>'
+        
+        def format_level_change(change):
+            if change is None:
+                return '<span class="na">N/A</span>'
+            elif change > 0:
+                return f'<span class="gain">+{change:,}</span>'
+            elif change < 0:
+                return f'<span class="loss">{change:,}</span>'
+            else:
+                return '<span class="neutral">0</span>'
+        
+
+        
+        # Format current values with changes
+        def format_rank_with_change(rank, change):
+            if rank is None:
+                return "N/A"
+            base = f"#{rank:,}"
+            if change is None:
+                return base
+            elif change > 0:  # Rank improvement (lower number is better)
+                return f"{base} <span class='gain'>+{change}</span>"
+            elif change < 0:  # Rank decline (higher number is worse)
+                return f"{base} <span class='loss'>{change}</span>"
+            else:
+                return base
+        
+        rank_display = format_rank_with_change(today_rank, player['rank_day_change'])
+        
+        # Format experience changes
+        exp_day_change_html = format_exp_change(player['exp_day_change'])
+        exp_seven_day_change_html = format_exp_change(player['exp_seven_day_change'])
+        exp_thirty_day_change_html = format_exp_change(player['exp_thirty_day_change'])
+        
+        # Get raw values for sorting
+        rank_raw = today_rank if today_rank is not None else 999999
+        exp_day_change_raw = player['exp_day_change'] if player['exp_day_change'] is not None else 0
+        exp_seven_day_change_raw = player['exp_seven_day_change'] if player['exp_seven_day_change'] is not None else 0
+        exp_thirty_day_change_raw = player['exp_thirty_day_change'] if player['exp_thirty_day_change'] is not None else 0
         
         html_content += f"""
-            <tr>
-                <td class="name"><a href="player_history.html?player={quote(name)}" style="color: #2c3e50; text-decoration: none;">{name}</a></td>
-                <td>{today:,}</td>
-                <td>{day_change_html}</td>
-                <td>{seven_day_change_html}</td>
-                <td>{thirty_day_change_html}</td>
+            <tr data-name="{name.lower()}" 
+                data-rank="{rank_raw}" 
+                data-experience="{today_exp}" 
+                data-exp-day="{exp_day_change_raw}" 
+                data-exp-week="{exp_seven_day_change_raw}" 
+                data-exp-month="{exp_thirty_day_change_raw}">
+                <td class="name"><a href="player_history.html?player={quote(name)}">{name}</a></td>
+                <td>{rank_display}</td>
+                <td>{today_exp:,}</td>
+                <td>{exp_day_change_html}</td>
+                <td>{exp_seven_day_change_html}</td>
+                <td>{exp_thirty_day_change_html}</td>
             </tr>
         """
     
     html_content += """
         </table>
         
-        <div style="margin-top: 30px; text-align: center; color: #7f8c8d; font-size: 12px;">
+        <div class="footer">
             <p>🤖 Generated automatically by GitHub Actions | 📅 Updates daily at 10 AM EST</p>
             <p>📈 Intelligent historical data lookup - uses best available data within range</p>
             <p>🔗 <a href="https://github.com/darkswashed/dura-exp-change">View Source Code</a></p>
         </div>
+        
+        <script>
+            let currentSort = { column: null, direction: 'asc' };
+            
+            // Theme management
+            function toggleTheme() {
+                const body = document.body;
+                const themeIcon = document.querySelector('.theme-icon');
+                const themeText = document.querySelector('.theme-text');
+                const currentTheme = body.getAttribute('data-theme');
+                
+                if (currentTheme === 'light') {
+                    body.setAttribute('data-theme', 'dark');
+                    themeIcon.textContent = '☀️';
+                    themeText.textContent = 'Light Mode';
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    body.setAttribute('data-theme', 'light');
+                    themeIcon.textContent = '🌙';
+                    themeText.textContent = 'Dark Mode';
+                    localStorage.setItem('theme', 'light');
+                }
+            }
+            
+            // Load saved theme
+            function loadTheme() {
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                const body = document.body;
+                const themeIcon = document.querySelector('.theme-icon');
+                const themeText = document.querySelector('.theme-text');
+                
+                body.setAttribute('data-theme', savedTheme);
+                if (savedTheme === 'dark') {
+                    themeIcon.textContent = '☀️';
+                    themeText.textContent = 'Light Mode';
+                } else {
+                    themeIcon.textContent = '🌙';
+                    themeText.textContent = 'Dark Mode';
+                }
+            }
+            
+            // Sorting functionality
+            function sortTable(column) {
+                const table = document.getElementById('highscoresTable');
+                const tbody = table.querySelector('tbody') || table;
+                const rows = Array.from(tbody.querySelectorAll('tr')).slice(2); // Skip header rows
+                
+                // Determine sort direction
+                if (currentSort.column === column) {
+                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSort.column = column;
+                    currentSort.direction = 'asc';
+                }
+                
+                // Update header indicators
+                document.querySelectorAll('th.sortable').forEach(th => {
+                    th.classList.remove('sort-asc', 'sort-desc');
+                });
+                const activeHeader = document.querySelector(`th[data-column="${column}"]`);
+                activeHeader.classList.add(currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+                
+                // Sort rows
+                rows.sort((a, b) => {
+                    let valueA, valueB;
+                    
+                    if (column === 'name') {
+                        valueA = a.getAttribute('data-name');
+                        valueB = b.getAttribute('data-name');
+                        const result = valueA.localeCompare(valueB);
+                        return currentSort.direction === 'asc' ? result : -result;
+                    } else {
+                        valueA = parseFloat(a.getAttribute(`data-${column}`)) || 0;
+                        valueB = parseFloat(b.getAttribute(`data-${column}`)) || 0;
+                        const result = valueA - valueB;
+                        return currentSort.direction === 'asc' ? result : -result;
+                    }
+                });
+                
+                // Re-append sorted rows
+                rows.forEach(row => tbody.appendChild(row));
+                
+                // Update row striping
+                updateRowStriping();
+            }
+            
+            function updateRowStriping() {
+                const table = document.getElementById('highscoresTable');
+                const rows = table.querySelectorAll('tr');
+                
+                // Start from index 2 to skip header rows
+                for (let i = 2; i < rows.length; i++) {
+                    const row = rows[i];
+                    // Remove existing striping classes
+                    row.style.background = '';
+                    // Add new striping based on position
+                    if ((i - 2) % 2 === 0) {
+                        row.style.background = 'var(--row-even)';
+                    } else {
+                        row.style.background = 'var(--row-odd)';
+                    }
+                }
+            }
+            
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function() {
+                loadTheme();
+                
+                // Add click handlers to sortable headers
+                document.querySelectorAll('th.sortable').forEach(header => {
+                    header.addEventListener('click', function() {
+                        const column = this.getAttribute('data-column');
+                        sortTable(column);
+                    });
+                });
+                
+                // Initial sort by name
+                sortTable('name');
+            });
+        </script>
     </body>
     </html>
     """
@@ -379,7 +791,7 @@ def compare_only(today_date=None, yesterday_date=None):
     
     # Generate HTML report
     report_file = "index.html"
-    compare_and_generate_html(today_data, yesterday_data, report_file)
+    compare_and_generate_html(today_data, yesterday_data, report_file, today_date)
     
     print(f"HTML report generated: {report_file}")
     print(f"Found {len(today_data)} players in today's data")
@@ -441,11 +853,20 @@ if __name__ == "__main__":
         yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
         yesterday_file = os.path.join(SAVE_DIR, f"highscores_{yesterday_str}.csv")
 
-        today_dict = {name: exp for name, exp in rows}
+        # Convert rows to dictionary format: {name: {experience, rank, level}}
+        today_dict = {}
+        for row in rows:
+            name, rank, level, experience = row
+            today_dict[name] = {
+                'experience': experience,
+                'rank': rank,
+                'level': level
+            }
+        
         yesterday_dict = load_csv(yesterday_file)
 
         report_file = "index.html"
-        compare_and_generate_html(today_dict, yesterday_dict, report_file)
+        compare_and_generate_html(today_dict, yesterday_dict, report_file, today_str)
 
         print("CSV snapshot saved:", today_file)
         print("HTML report saved:", report_file)
