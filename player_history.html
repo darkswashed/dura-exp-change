@@ -728,10 +728,10 @@
                 
                 const availableFiles = [];
                 
-                // Check for files over a wider date range (last 6 months)
+                // Check for files over the last 30 days only
                 const today = new Date();
                 const startDate = new Date(today);
-                startDate.setMonth(today.getMonth() - 6); // Go back 6 months
+                startDate.setDate(today.getDate() - 30); // Go back 30 days
                 
                 console.log(`Checking for CSV files from ${startDate.toISOString().split('T')[0]} to ${today.toISOString().split('T')[0]}`);
                 
