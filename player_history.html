@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         :root {
             /* Light mode colors */
@@ -302,6 +303,15 @@
         .share-button:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+        }
+
+        .screenshot-button {
+            background: linear-gradient(135deg, #17a2b8, #138496) !important;
+            box-shadow: 0 2px 6px rgba(23, 162, 184, 0.3) !important;
+        }
+
+        .screenshot-button:hover {
+            box-shadow: 0 4px 12px rgba(23, 162, 184, 0.4) !important;
         }
 
         .player-card-stats {
@@ -929,7 +939,7 @@
             }
             
             calculatePowerLevel(playerName, data) {
-                if (data.length === 0) return { powerLevel: 0, tier: '🌱 NOVICE 🌱', tierClass: 'novice' };
+                if (data.length === 0) return { powerLevel: 0, tier: '🌱 PATHETIC NOOB 🌱', tierClass: 'novice' };
 
                 const latestData = data[data.length - 1];
                 const latestDate = latestData.date;
@@ -945,159 +955,159 @@
                 
                 // Ultra High Tiers (1,000,000+ intervals)
                 if (totalPowerLevel >= 10000000) {
-                    tier = '⚡ APEX PREDATOR ⚡';
+                    tier = '⚡ GALACTIC MIND MELTER ⚡';
                     tierClass = 'legendary';
                 } else if (totalPowerLevel >= 9000000) {
-                    tier = '💥 ULTIMATE DESTROYER 💥';
+                    tier = '💥 NEBULA BRAIN SCRAMBLER 💥';
                     tierClass = 'legendary';
                 } else if (totalPowerLevel >= 8000000) {
-                    tier = '🌠 TRANSCENDENT BEING 🌠';
+                    tier = '🌠 STELLAR REALITY WRECKER 🌠';
                     tierClass = 'legendary';
                 } else if (totalPowerLevel >= 7000000) {
-                    tier = '👑 ABSOLUTE SOVEREIGN 👑';
+                    tier = '👑 COSMIC SHIT DISTURBER 👑';
                     tierClass = 'legendary';
                 } else if (totalPowerLevel >= 6000000) {
-                    tier = '⚡ OMNIVERSAL GOD ⚡';
+                    tier = '⚡ UNIVERSAL DREAM CRUSHER ⚡';
                     tierClass = 'legendary';
                 } else if (totalPowerLevel >= 5000000) {
-                    tier = '🌌 INFINITY MASTER 🌌';
+                    tier = '🌌 HEAVENLY HELL RAISER 🌌';
                     tierClass = 'legendary';
                 } else if (totalPowerLevel >= 4000000) {
-                    tier = '💀 OBLIVION LORD 💀';
+                    tier = '💀 DIVINE CHAOS BRINGER 💀';
                     tierClass = 'legendary';
                 } else if (totalPowerLevel >= 3000000) {
-                    tier = '🌟 GENESIS EMPEROR 🌟';
+                    tier = '🌟 SACRED RULE BREAKER 🌟';
                     tierClass = 'legendary';
                 } else if (totalPowerLevel >= 2000000) {
-                    tier = '⚡ PRIMORDIAL FORCE ⚡';
+                    tier = '⚡ BLESSED TROUBLE MAKER ⚡';
                     tierClass = 'legendary';
                 } else if (totalPowerLevel >= 1000000) {
-                    tier = '🔥 ETERNAL DESTROYER 🔥';
+                    tier = '🔥 HOLY SPIRIT CRUSHER 🔥';
                     tierClass = 'legendary';
                 
                 // High Tiers (100,000 intervals)
                 } else if (totalPowerLevel >= 900000) {
-                    tier = '🌌 COSMOS MASTER 🌌';
+                    tier = '🌌 LEGENDARY MOTHERFUCKER 🌌';
                     tierClass = 'elite';
                 } else if (totalPowerLevel >= 800000) {
-                    tier = '⚡ DIMENSIONAL LORD ⚡';
+                    tier = '⚡ EPIC SHITKICKER ⚡';
                     tierClass = 'elite';
                 } else if (totalPowerLevel >= 700000) {
-                    tier = '💥 MULTIVERSE KING 💥';
+                    tier = '💥 MYTHIC BALLBUSTER 💥';
                     tierClass = 'elite';
                 } else if (totalPowerLevel >= 600000) {
-                    tier = '🌠 STELLAR DOMINATOR 🌠';
+                    tier = '🌠 ANCIENT ASSHOLE 🌠';
                     tierClass = 'elite';
                 } else if (totalPowerLevel >= 500000) {
-                    tier = '👑 INFINITE RULER 👑';
+                    tier = '👑 ETERNAL DICKHEAD 👑';
                     tierClass = 'elite';
                 } else if (totalPowerLevel >= 400000) {
-                    tier = '🔮 REALITY ARCHITECT 🔮';
+                    tier = '🔮 SHADOW DICKSLINGER 🔮';
                     tierClass = 'elite';
                 } else if (totalPowerLevel >= 300000) {
-                    tier = '⚡ OMNIPOTENT FORCE ⚡';
+                    tier = '⚡ NIGHTMARE SHITLORD ⚡';
                     tierClass = 'elite';
                 } else if (totalPowerLevel >= 200000) {
-                    tier = '🌌 UNIVERSE BENDER 🌌';
+                    tier = '🌌 DARKNESS PISSLORD 🌌';
                     tierClass = 'elite';
                 } else if (totalPowerLevel >= 100000) {
-                    tier = '🌟 GALACTIC EMPEROR 🌟';
+                    tier = '🌟 VOID ASSMASTER 🌟';
                     tierClass = 'elite';
                 
                 // Mid Tiers (10,000 intervals)
                 } else if (totalPowerLevel >= 90000) {
-                    tier = '💎 DIAMOND OVERLORD 💎';
+                    tier = '💎 ABYSS DICKWAD 💎';
                     tierClass = 'expert';
                 } else if (totalPowerLevel >= 80000) {
-                    tier = '🌪️ HURRICANE KING 🌪️';
+                    tier = '🌪️ SAVAGE COCKBLOCKER 🌪️';
                     tierClass = 'expert';
                 } else if (totalPowerLevel >= 70000) {
-                    tier = '❄️ ABSOLUTE ZERO ❄️';
+                    tier = '❄️ RUTHLESS DICKBEATER ❄️';
                     tierClass = 'expert';
                 } else if (totalPowerLevel >= 60000) {
-                    tier = '🔥 INFERNAL SOVEREIGN 🔥';
+                    tier = '🔥 MERCILESS ASSRIPPER 🔥';
                     tierClass = 'expert';
                 } else if (totalPowerLevel >= 50000) {
-                    tier = '⚡ THUNDER GOD ⚡';
+                    tier = '⚡ VICIOUS BALLBREAKER ⚡';
                     tierClass = 'expert';
                 } else if (totalPowerLevel >= 40000) {
-                    tier = '🌠 CELESTIAL WARDEN 🌠';
+                    tier = '🌠 BRUTAL SHITFUCKER 🌠';
                     tierClass = 'expert';
                 } else if (totalPowerLevel >= 30000) {
-                    tier = '� CHAOS EMPEROR 👑';
+                    tier = '👑 GALACTIC ASS KICKER 👑';
                     tierClass = 'expert';
                 } else if (totalPowerLevel >= 20000) {
-                    tier = '🔮 SOUL HARVESTER 🔮';
+                    tier = '🔮 STELLAR PAIN DEALER 🔮';
                     tierClass = 'expert';
                 } else if (totalPowerLevel >= 10000) {
-                    tier = '🌌 COSMIC SLAYER 🌌';
+                    tier = '🌌 UNIVERSAL BADASS 🌌';
                     tierClass = 'expert';
                 
                 // Low Tiers (500 intervals)
                 } else if (totalPowerLevel >= 9500) {
-                    tier = '⚡ DIMENSION RIPPER ⚡';
+                    tier = '⚡ COSMIC HELLRAISER ⚡';
                     tierClass = 'advanced';
                 } else if (totalPowerLevel >= 9000) {
-                    tier = '💥 REALITY SHAPER 💥';
+                    tier = '💥 DIVINE SHITSTORM 💥';
                     tierClass = 'advanced';
                 } else if (totalPowerLevel >= 8500) {
-                    tier = '🌙 VOID WALKER 🌙';
+                    tier = '🌙 SACRED WRECKING BALL 🌙';
                     tierClass = 'advanced';
                 } else if (totalPowerLevel >= 8000) {
-                    tier = '🌟 STAR CRUSHER 🌟';
+                    tier = '🌟 BLESSED NIGHTMARE 🌟';
                     tierClass = 'advanced';
                 } else if (totalPowerLevel >= 7500) {
-                    tier = '🌊 TIDE TURNER 🌊';
+                    tier = '🌊 HOLY TERROR 🌊';
                     tierClass = 'advanced';
                 } else if (totalPowerLevel >= 7000) {
-                    tier = '⚡ STORM BREAKER ⚡';
+                    tier = '⚡ HEAVENLY BASTARD ⚡';
                     tierClass = 'advanced';
                 } else if (totalPowerLevel >= 6500) {
-                    tier = '🌋 INFERNO LORD 🌋';
+                    tier = '🌋 INFERNAL BLAZE MASTER 🌋';
                     tierClass = 'advanced';
                 } else if (totalPowerLevel >= 6000) {
-                    tier = '💀 DEATH DEALER �';
+                    tier = '💀 ABYSSAL VOID WALKER 💀';
                     tierClass = 'advanced';
                 } else if (totalPowerLevel >= 5500) {
-                    tier = '🔥 OBLITERATOR 🔥';
+                    tier = '🔥 TEMPEST STORM RIDER 🔥';
                     tierClass = 'advanced';
                 } else if (totalPowerLevel >= 5000) {
-                    tier = '⚡ ANNIHILATOR ⚡';
+                    tier = '⚡ EARTHEN BONE CRUSHER ⚡';
                     tierClass = 'advanced';
                 } else if (totalPowerLevel >= 4500) {
-                    tier = '🌪️ RAVAGER 🌪️';
+                    tier = '🌪️ FROZEN HEART BREAKER 🌪️';
                     tierClass = 'intermediate';
                 } else if (totalPowerLevel >= 4000) {
-                    tier = '💥 DESTROYER 💥';
+                    tier = '💥 SHADOW REALM DANCER 💥';
                     tierClass = 'intermediate';
                 } else if (totalPowerLevel >= 3500) {
-                    tier = '🗡️ EXECUTIONER 🗡️';
+                    tier = '🗡️ NIGHTMARE FUEL MAKER 🗡️';
                     tierClass = 'intermediate';
                 } else if (totalPowerLevel >= 3000) {
-                    tier = '⚔️ GLADIATOR ⚔️';
+                    tier = '⚔️ DARKNESS LIGHT KILLER ⚔️';
                     tierClass = 'intermediate';
                 } else if (totalPowerLevel >= 2500) {
-                    tier = '💀 SLAYER 💀';
+                    tier = '💀 VOID SPACE RIPPER 💀';
                     tierClass = 'intermediate';
                 } else if (totalPowerLevel >= 2000) {
-                    tier = '🔥 BERSERKER 🔥';
+                    tier = '🔥 ABYSS SOUL EATER 🔥';
                     tierClass = 'intermediate';
                 } else if (totalPowerLevel >= 1500) {
-                    tier = '⚡ WARRIOR ⚡';
+                    tier = '⚡ GENERIC ASS KICKER ⚡';
                     tierClass = 'intermediate';
                 } else if (totalPowerLevel >= 1000) {
-                    tier = '🛡️ FIGHTER 🛡️';
+                    tier = '🛡️ BASIC PAIN DEALER 🛡️';
                     tierClass = 'intermediate';
                 
                 // Ultra Low Tiers
                 } else if (totalPowerLevel >= 500) {
-                    tier = '🔪 BRAWLER 🔪';
+                    tier = '🔪 WANNABE BADASS 🔪';
                     tierClass = 'novice';
                 } else if (totalPowerLevel >= 100) {
-                    tier = '⚔️ SCRAPPER ⚔️';
+                    tier = '⚔️ ROOKIE DICKHEAD ⚔️';
                     tierClass = 'novice';
                 } else {
-                    tier = '🗡️ ROOKIE 🗡️';
+                    tier = '🗡️ PATHETIC NOOB 🗡️';
                     tierClass = 'novice';
                 }
                 
@@ -1181,6 +1191,9 @@
                             <div class="player-actions">
                                 <button class="share-button" onclick="navigator.clipboard.writeText('${shareableURL}'); this.innerHTML='✓ Copied'; setTimeout(() => this.innerHTML='🔗 Share', 2000)">
                                     🔗 Share
+                                </button>
+                                <button class="share-button screenshot-button" onclick="this.takeScreenshot('${playerName}')">
+                                    📸 Screenshot
                                 </button>
                             </div>
                         </div>
@@ -1690,6 +1703,94 @@
                 });
                 
                 document.getElementById('positionChartContainer').style.display = 'block';
+            }
+            
+            takeScreenshot(playerName) {
+                // Get the main content area to capture
+                const playerCard = document.querySelector('.player-card');
+                const chartContainers = document.querySelectorAll('#chartContainer, #powerLevelChartContainer, #positionChartContainer');
+                
+                if (!playerCard) {
+                    this.showError('No player data to capture');
+                    return;
+                }
+                
+                // Create a temporary container with all content to capture
+                const captureContainer = document.createElement('div');
+                captureContainer.style.cssText = `
+                    position: absolute;
+                    left: -9999px;
+                    top: 0;
+                    background: var(--bg-color);
+                    padding: 20px;
+                    border-radius: 8px;
+                    width: 800px;
+                `;
+                
+                // Clone the player card
+                const playerCardClone = playerCard.cloneNode(true);
+                
+                // Remove the screenshot button from the clone to avoid it appearing in the image
+                const screenshotBtn = playerCardClone.querySelector('.screenshot-button');
+                if (screenshotBtn) {
+                    screenshotBtn.remove();
+                }
+                
+                captureContainer.appendChild(playerCardClone);
+                
+                // Clone visible charts
+                chartContainers.forEach(container => {
+                    if (container && container.style.display !== 'none') {
+                        const chartClone = container.cloneNode(true);
+                        captureContainer.appendChild(chartClone);
+                    }
+                });
+                
+                document.body.appendChild(captureContainer);
+                
+                // Update screenshot button to show loading state
+                const screenshotButton = document.querySelector('.screenshot-button');
+                const originalText = screenshotButton.innerHTML;
+                screenshotButton.innerHTML = '📷 Capturing...';
+                screenshotButton.disabled = true;
+                
+                // Capture the screenshot
+                html2canvas(captureContainer, {
+                    backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim(),
+                    scale: 2, // Higher quality
+                    useCORS: true,
+                    logging: false,
+                    width: 840,
+                    height: captureContainer.scrollHeight + 40
+                }).then(canvas => {
+                    // Clean up the temporary container
+                    document.body.removeChild(captureContainer);
+                    
+                    // Create download link
+                    const link = document.createElement('a');
+                    link.download = `${playerName}_highscores_${new Date().toISOString().split('T')[0]}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    
+                    // Trigger download
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    // Reset button
+                    screenshotButton.innerHTML = originalText;
+                    screenshotButton.disabled = false;
+                    
+                    this.showInfo(`Screenshot saved as ${link.download}`);
+                }).catch(error => {
+                    console.error('Screenshot failed:', error);
+                    document.body.removeChild(captureContainer);
+                    
+                    // Reset button
+                    screenshotButton.innerHTML = originalText;
+                    screenshotButton.disabled = false;
+                    
+                    this.showError('Failed to capture screenshot');
+                });
             }
             
             showError(message) {
