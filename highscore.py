@@ -32,9 +32,6 @@ def parse_highscores(html):
     for tr in soup.find_all("tr"):
         cols = tr.find_all("td")
         if len(cols) == 4:  # Rank, Name, Level, Points
-            # Extract rank
-            rank = cols[0].get_text(strip=True).replace(",", "")
-            
             # Extract name
             name_td = cols[1]
             name_tag = name_td.find(["a", "span"])
@@ -43,15 +40,12 @@ def parse_highscores(html):
             else:
                 name = name_td.get_text(strip=True).split("\n")[0]
             
-            # Extract level (power level)
-            level = cols[2].get_text(strip=True).replace(",", "")
-            
             # Extract experience points
             exp = cols[3].get_text(strip=True).replace(",", "")
             
-            # Validate that all numeric fields are valid
-            if rank.isdigit() and level.isdigit() and exp.isdigit():
-                rows.append([name, int(rank), int(level), int(exp)])
+            # Validate that experience is valid
+            if exp.isdigit():
+                rows.append([name, int(exp)])
     return rows
 
 def build_snapshot(pages=200, delay=0.05):
@@ -72,7 +66,7 @@ def save_csv(data, date=None):
     filename = os.path.join(SAVE_DIR, f"highscores_{date}.csv")
     with open(filename, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["Name", "Rank", "Level", "Experience"])
+        writer.writerow(["Name", "Experience"])
         writer.writerows(data)
     return filename
 
@@ -853,14 +847,12 @@ if __name__ == "__main__":
         yesterday_str = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
         yesterday_file = os.path.join(SAVE_DIR, f"highscores_{yesterday_str}.csv")
 
-        # Convert rows to dictionary format: {name: {experience, rank, level}}
+        # Convert rows to dictionary format: {name: {experience}}
         today_dict = {}
         for row in rows:
-            name, rank, level, experience = row
+            name, experience = row
             today_dict[name] = {
-                'experience': experience,
-                'rank': rank,
-                'level': level
+                'experience': experience
             }
         
         yesterday_dict = load_csv(yesterday_file)
