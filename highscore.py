@@ -365,6 +365,30 @@ def compare_and_generate_html(today_data, yesterday_data, output_file, reference
                 transition: background-color 0.3s ease, color 0.3s ease;
             }}
             
+            .banner {{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-bottom: 20px;
+                width: 100%;
+            }}
+            
+            .banner img {{
+                width: 320px;
+                height: 50px;
+                max-width: 100%;
+                height: auto;
+                object-fit: contain;
+            }}
+            
+            /* Mobile responsiveness for banner */
+            @media (max-width: 480px) {{
+                .banner img {{
+                    width: 90%;
+                    max-width: 320px;
+                }}
+            }}
+            
             .controls {{
                 display: flex;
                 justify-content: center;
@@ -495,6 +519,10 @@ def compare_and_generate_html(today_data, yesterday_data, output_file, reference
         </style>
     </head>
     <body data-theme="light">
+        <div class="banner">
+            <img src="banner.png" alt="Banner" />
+        </div>
+        
         <div class="header">
             <h1>🎮 Dura Online Highscores Tracker</h1>
             <h2>Experience Changes - {today_date.strftime("%Y-%m-%d")}</h2>
