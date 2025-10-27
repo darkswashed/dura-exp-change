@@ -520,7 +520,7 @@ def compare_and_generate_html(today_data, yesterday_data, output_file, reference
     </head>
     <body data-theme="light">
         <div class="banner">
-            <img src="banner.png" alt="Banner" />
+            <img src="banner.gif" alt="Banner" />
         </div>
         
         <div class="header">
@@ -909,3 +909,4 @@ if __name__ == "__main__":
             print("✅ All operations completed successfully!")
         else:
             print("⚠️ Operations completed but git push may have failed")
+
