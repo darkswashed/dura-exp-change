@@ -9,6 +9,79 @@ from bs4 import BeautifulSoup
 from urllib.parse import quote
 
 BASE_URL_FIRST = "https://classic.dura-online.com/?highscores/experience"
+
+def calculate_level_from_exp(experience):
+    """
+    Calculate the player's level based on their experience using the reverse of the experience formula.
+    The formula for experience to reach a level is: 50(lvl-1)³ - 150(lvl-1)² + 400(lvl-1) / 3
+    We need to solve for level given experience.
+    
+    Uses an improved iterative approach that works for very high levels.
+    """
+    if experience <= 0:
+        return 1.0
+    
+    def exp_to_reach_level(level):
+        """Calculate total experience needed to reach a certain level"""
+        if level <= 1:
+            return 0
+        lvl_minus_1 = level - 1
+        numerator = (50 * (lvl_minus_1 ** 3)) - (150 * (lvl_minus_1 ** 2)) + (400 * lvl_minus_1)
+        return numerator / 3
+    
+    # Start with a reasonable estimate based on cubic root approximation
+    # For very high exp, the dominant term is 50(lvl-1)³/3, so lvl ≈ (3*exp/50)^(1/3) + 1
+    rough_estimate = ((3 * experience / 50) ** (1/3)) + 1
+    
+    # Use Newton-Raphson method for better convergence at high levels
+    level = max(1.0, rough_estimate)
+    
+    for iteration in range(50):  # More iterations for high precision
+        current_exp = exp_to_reach_level(level)
+        
+        # Check if we're close enough
+        if abs(current_exp - experience) < 0.1:
+            return level
+        
+        # Calculate derivative for Newton-Raphson
+        # d/dx[50(x-1)³ - 150(x-1)² + 400(x-1)]/3 = [150(x-1)² - 300(x-1) + 400]/3
+        lvl_minus_1 = level - 1
+        derivative = (150 * (lvl_minus_1 ** 2) - 300 * lvl_minus_1 + 400) / 3
+        
+        if derivative == 0:
+            # Fallback to binary search if derivative is zero
+            break
+        
+        # Newton-Raphson step
+        new_level = level - (current_exp - experience) / derivative
+        
+        # Ensure we don't go below 1 or make wild jumps
+        if new_level < 1:
+            new_level = 1.0
+        elif abs(new_level - level) > 10:  # Limit step size for stability
+            if new_level > level:
+                new_level = level + 10
+            else:
+                new_level = level - 10
+        
+        level = new_level
+    
+    # Fallback binary search if Newton-Raphson didn't converge
+    low = 1.0
+    high = max(1000.0, level * 2)  # Use a much higher upper bound
+    
+    for _ in range(100):
+        mid = (low + high) / 2
+        exp_for_mid = exp_to_reach_level(mid)
+        
+        if abs(exp_for_mid - experience) < 0.1:
+            return mid
+        elif exp_for_mid < experience:
+            low = mid
+        else:
+            high = mid
+    
+    return (low + high) / 2
 BASE_URL_PAGED = "https://classic.dura-online.com/?highscores/experience/{}"
 SAVE_DIR = "snapshots"
 
@@ -302,7 +375,10 @@ def compare_and_generate_html(today_data, yesterday_data, output_file, reference
                 'exp_day_change': exp_day_change,
                 'exp_seven_day_change': exp_seven_day_change,
                 'exp_thirty_day_change': exp_thirty_day_change,
-                'rank_day_change': rank_day_change
+                'rank_day_change': rank_day_change,
+                'yesterday_exp': yesterday_exp,
+                'seven_day_exp': seven_day_exp,
+                'thirty_day_exp': thirty_day_exp
             })
     
     # Sort by current rank (if available), then by name
@@ -433,7 +509,7 @@ def compare_and_generate_html(today_data, yesterday_data, output_file, reference
             th, td {{ 
                 border: 1px solid var(--table-border); 
                 padding: 12px; 
-                text-align: right; 
+                text-align: center; 
                 transition: background-color 0.2s ease;
             }}
             
@@ -539,6 +615,7 @@ def compare_and_generate_html(today_data, yesterday_data, output_file, reference
             <tr>
                 <th rowspan="2" class="name sortable" data-column="name">Player Name</th>
                 <th rowspan="2" class="sortable" data-column="rank">Rank</th>
+                <th rowspan="2" class="sortable" data-column="level">Level</th>
                 <th rowspan="2" class="sortable" data-column="experience">Experience</th>
                 <th colspan="3" class="period-header">Experience Changes</th>
             </tr>
@@ -556,16 +633,24 @@ def compare_and_generate_html(today_data, yesterday_data, output_file, reference
         today_exp = player['today_exp']
         today_rank = player['today_rank']
         
-        # Format changes with appropriate styling
-        def format_exp_change(change):
+        # Format changes with appropriate styling and percentages
+        def format_exp_change(change, previous_exp):
             if change is None:
                 return '<span class="na">N/A</span>'
-            elif change > 0:
-                return f'<span class="gain">+{change:,}</span>'
-            elif change < 0:
-                return f'<span class="loss">{change:,}</span>'
-            else:
+            elif change == 0:
                 return '<span class="neutral">0</span>'
+            else:
+                # Calculate percentage
+                if previous_exp is not None and previous_exp > 0:
+                    percentage = (change / previous_exp) * 100
+                    percentage_str = f"({percentage:+.2f}%)"
+                else:
+                    percentage_str = ""
+                
+                if change > 0:
+                    return f'<span class="gain">+{change:,} {percentage_str}</span>'
+                else:
+                    return f'<span class="loss">{change:,} {percentage_str}</span>'
         
         def format_rank_change(change):
             if change is None:
@@ -605,10 +690,13 @@ def compare_and_generate_html(today_data, yesterday_data, output_file, reference
         
         rank_display = format_rank_with_change(today_rank, player['rank_day_change'])
         
-        # Format experience changes
-        exp_day_change_html = format_exp_change(player['exp_day_change'])
-        exp_seven_day_change_html = format_exp_change(player['exp_seven_day_change'])
-        exp_thirty_day_change_html = format_exp_change(player['exp_thirty_day_change'])
+        # Calculate player level
+        player_level = calculate_level_from_exp(today_exp)
+        
+        # Format experience changes with percentages
+        exp_day_change_html = format_exp_change(player['exp_day_change'], player['yesterday_exp'])
+        exp_seven_day_change_html = format_exp_change(player['exp_seven_day_change'], player['seven_day_exp'])
+        exp_thirty_day_change_html = format_exp_change(player['exp_thirty_day_change'], player['thirty_day_exp'])
         
         # Get raw values for sorting
         rank_raw = today_rank if today_rank is not None else 999999
@@ -619,12 +707,14 @@ def compare_and_generate_html(today_data, yesterday_data, output_file, reference
         html_content += f"""
             <tr data-name="{name.lower()}" 
                 data-rank="{rank_raw}" 
+                data-level="{player_level:.2f}"
                 data-experience="{today_exp}" 
                 data-exp-day="{exp_day_change_raw}" 
                 data-exp-week="{exp_seven_day_change_raw}" 
                 data-exp-month="{exp_thirty_day_change_raw}">
                 <td class="name"><a href="player_history.html?player={quote(name)}">{name}</a></td>
                 <td>{rank_display}</td>
+                <td>Lv. {int(player_level)}</td>
                 <td>{today_exp:,}</td>
                 <td>{exp_day_change_html}</td>
                 <td>{exp_seven_day_change_html}</td>
