@@ -634,41 +634,79 @@
             /**
              * Calculate the total experience needed to reach a certain level.
              * Formula: 50(lvl-1)³ - 150(lvl-1)² + 400(lvl-1) / 3
+             * Optimized for large numbers to avoid precision issues
              */
             if (level <= 1) {
                 return 0;
             }
             
             const lvlMinus1 = level - 1;
-            const numerator = (50 * Math.pow(lvlMinus1, 3)) - (150 * Math.pow(lvlMinus1, 2)) + (400 * lvlMinus1);
-            return numerator / 3;
+            // Break down the calculation to maintain precision
+            const term1 = 50 * lvlMinus1 * lvlMinus1 * lvlMinus1;  // 50 * (lvl-1)³
+            const term2 = 150 * lvlMinus1 * lvlMinus1;             // 150 * (lvl-1)²
+            const term3 = 400 * lvlMinus1;                         // 400 * (lvl-1)
+            
+            const numerator = term1 - term2 + term3;
+            return Math.round(numerator / 3); // Round to avoid floating point precision issues
         }
 
         function calculateCurrentLevel(experience) {
             /**
              * Calculate the current level based on total experience.
-             * Returns level and progress to next level.
+             * Uses binary search for better performance with high levels.
              */
             if (experience <= 0) {
                 return { level: 1, progress: 0, expToNext: 100, expInLevel: 0 };
             }
             
-            // Find the highest level where exp_to_reach_level <= experience
-            let level = 1;
-            while (level <= 200) { // Cap at level 200 for performance
-                const expForThisLevel = expToReachLevel(level + 1);
-                if (experience < expForThisLevel) {
-                    break;
+            // Use binary search for efficiency with high levels
+            let low = 1;
+            let high = 500; // Reasonable upper bound
+            let currentLevel = 1;
+            
+            // First, find the approximate range
+            while (high - low > 1) {
+                const mid = Math.floor((low + high) / 2);
+                const expForMid = expToReachLevel(mid);
+                
+                if (experience >= expForMid) {
+                    low = mid;
+                } else {
+                    high = mid;
                 }
-                level++;
             }
             
-            // Calculate progress to next level
+            // Now check the exact level between low and high
+            for (let level = low; level <= high + 5; level++) { // Check a few extra levels to be safe
+                const expForCurrentLevel = expToReachLevel(level);
+                const expForNextLevel = expToReachLevel(level + 1);
+                
+                if (experience >= expForCurrentLevel && experience < expForNextLevel) {
+                    // Calculate progress to next level
+                    const expInLevel = experience - expForCurrentLevel;
+                    const expNeededForLevel = expForNextLevel - expForCurrentLevel;
+                    const expToNext = expForNextLevel - experience;
+                    const progress = expNeededForLevel > 0 ? (expInLevel / expNeededForLevel) * 100 : 0;
+                    
+                    return {
+                        level: level,
+                        progress: Math.max(0, Math.min(100, progress)),
+                        expToNext: Math.max(0, expToNext),
+                        expInLevel: Math.max(0, expInLevel),
+                        expForCurrentLevel: expForCurrentLevel,
+                        expForNextLevel: expForNextLevel
+                    };
+                }
+            }
+            
+            // If we reach here, use the highest level we checked
+            const level = high;
             const expForCurrentLevel = expToReachLevel(level);
             const expForNextLevel = expToReachLevel(level + 1);
             const expInLevel = experience - expForCurrentLevel;
+            const expNeededForLevel = expForNextLevel - expForCurrentLevel;
             const expToNext = expForNextLevel - experience;
-            const progress = (expInLevel / (expForNextLevel - expForCurrentLevel)) * 100;
+            const progress = expNeededForLevel > 0 ? (expInLevel / expNeededForLevel) * 100 : 0;
             
             return {
                 level: level,
