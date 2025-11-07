@@ -615,6 +615,14 @@
             font-weight: bold;
         }
         
+        .sidebar-percentage {
+            border-left: 3px solid #f39c12;
+        }
+        
+        .sidebar-percentage .sidebar-rank {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
         .sidebar-loading {
             text-align: center;
             color: var(--text-secondary);
@@ -713,6 +721,9 @@
             
             <h3 style="margin-top: 25px;">📅 Top 7-Day Gains</h3>
             <div id="sidebar-7day" class="sidebar-loading">Loading...</div>
+            
+            <h3 style="margin-top: 25px;">📊 Top % Gains (30d)</h3>
+            <div id="sidebar-percentage" class="sidebar-loading">Loading...</div>
         </div>
         
         <!-- Main Content -->
@@ -2162,6 +2173,7 @@
             updateSidebars() {
                 this.updateTop1DayGains();
                 this.updateTop7DayGains();
+                this.updateTopPercentageGains();
                 this.updateTop30DayGains();
                 this.updateTopPowerLevelGains();
             }
@@ -2174,6 +2186,11 @@
             updateTop7DayGains() {
                 const gains = this.calculateTopGains(7);
                 this.renderSidebar('sidebar-7day', gains);
+            }
+            
+            updateTopPercentageGains() {
+                const gains = this.calculateTopPercentageGains(30);
+                this.renderSidebar('sidebar-percentage', gains, true);
             }
             
             updateTop30DayGains() {
@@ -2219,6 +2236,42 @@
                 return gains.sort((a, b) => b.gain - a.gain).slice(0, 10);
             }
             
+            calculateTopPercentageGains(days) {
+                const gains = [];
+                const sortedDates = Array.from(this.csvData.keys()).sort();
+                
+                if (sortedDates.length < days + 1) return gains;
+                
+                const latestDate = sortedDates[sortedDates.length - 1];
+                const compareDate = sortedDates[sortedDates.length - 1 - days];
+                
+                const latestData = this.csvData.get(latestDate);
+                const compareData = this.csvData.get(compareDate);
+                
+                if (!latestData || !compareData) return gains;
+                
+                // Calculate percentage gains for each player
+                for (const [playerName, latestExp] of latestData.entries()) {
+                    const compareExp = compareData.get(playerName);
+                    if (compareExp !== undefined && compareExp > 0) {
+                        const gain = latestExp - compareExp;
+                        const percentage = (gain / compareExp) * 100;
+                        
+                        if (percentage > 0) {
+                            gains.push({
+                                name: playerName,
+                                gain: gain,
+                                percentage: percentage,
+                                formattedPercentage: percentage.toFixed(2)
+                            });
+                        }
+                    }
+                }
+                
+                // Sort by percentage and return top 10
+                return gains.sort((a, b) => b.percentage - a.percentage).slice(0, 10);
+            }
+            
             calculateTopPowerLevelGains() {
                 const gains = [];
                 const sortedDates = Array.from(this.csvData.keys()).sort();
@@ -2262,7 +2315,7 @@
                 return gains.sort((a, b) => b.gain - a.gain).slice(0, 10);
             }
             
-            renderSidebar(containerId, data) {
+            renderSidebar(containerId, data, isPercentage = false) {
                 const container = document.getElementById(containerId);
                 
                 if (!data || data.length === 0) {
@@ -2272,15 +2325,24 @@
                 
                 const html = data.map((item, index) => {
                     const isPowerLevel = containerId === 'sidebar-power';
-                    const gainText = isPowerLevel ? 
-                        `+${item.gain.toLocaleString()}` : 
-                        `+${item.gain.toLocaleString()}`;
-                    const subText = isPowerLevel ? 
-                        `Power: ${item.currentPowerLevel.toLocaleString()}` :
-                        `+${item.percentage}%`;
+                    const isPercentageSection = containerId === 'sidebar-percentage';
+                    let gainText, subText;
+                    
+                    if (isPercentage) {
+                        gainText = `+${item.formattedPercentage}%`;
+                        subText = `+${item.gain.toLocaleString()} EXP`;
+                    } else if (isPowerLevel) {
+                        gainText = `+${item.gain.toLocaleString()}`;
+                        subText = `Power: ${item.currentPowerLevel.toLocaleString()}`;
+                    } else {
+                        gainText = `+${item.gain.toLocaleString()}`;
+                        subText = `+${item.percentage}%`;
+                    }
+                    
+                    const extraClass = isPercentageSection ? ' sidebar-percentage' : '';
                     
                     return `
-                        <div class="sidebar-item" onclick="tracker.selectPlayer('${item.name.replace(/'/g, "\\'")}')">
+                        <div class="sidebar-item${extraClass}" onclick="tracker.selectPlayer('${item.name.replace(/'/g, "\\'")}')">
                             <div class="sidebar-rank">${index + 1}</div>
                             <div class="sidebar-info">
                                 <div class="sidebar-name" title="${item.name}">${item.name}</div>
