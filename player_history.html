@@ -1380,6 +1380,59 @@
                     }
                 };
             }
+            
+            calculatePowerLevelProgression(playerName, data) {
+                if (data.length === 0) return null;
+
+                const latestData = data[data.length - 1];
+                const latestDate = latestData.date;
+                
+                // Get current position and experience
+                const { position: currentPosition } = this.calculatePlayerPosition(latestDate, playerName);
+                const currentExp = latestData.experience;
+                const currentPowerLevel = Math.round(currentExp / currentPosition);
+                
+                if (currentPosition === '?' || currentPosition <= 1) return null;
+                
+                // Calculate what experience is needed to reach the next rank (position - 1)
+                const nextPosition = currentPosition - 1;
+                const playersOnDate = this.csvData.get(latestDate);
+                
+                if (!playersOnDate) return null;
+                
+                // Get the experience of the player currently at the next position
+                const sortedPlayers = Array.from(playersOnDate.entries())
+                    .sort((a, b) => b[1] - a[1]);
+                
+                if (nextPosition <= 0 || nextPosition > sortedPlayers.length) return null;
+                
+                const nextRankPlayer = sortedPlayers[nextPosition - 1];
+                const nextRankExp = nextRankPlayer[1];
+                
+                // Calculate experience needed to overtake the next rank
+                const expNeededForNextRank = nextRankExp + 1; // Need 1 more exp than them
+                const expNeeded = expNeededForNextRank - currentExp;
+                
+                // Calculate what the new power level would be at next rank
+                const nextRankPowerLevel = Math.round(expNeededForNextRank / nextPosition);
+                const powerLevelIncrease = nextRankPowerLevel - currentPowerLevel;
+                
+                // Calculate progress percentage (how close we are)
+                const progressToNext = expNeeded <= 0 ? 100 : Math.max(0, Math.min(100, ((currentExp / expNeededForNextRank) * 100)));
+                
+                return {
+                    currentRank: currentPosition,
+                    nextRank: nextPosition,
+                    currentExp: currentExp,
+                    expNeededForNextRank: expNeededForNextRank,
+                    expNeeded: Math.max(0, expNeeded),
+                    currentPowerLevel: currentPowerLevel,
+                    nextRankPowerLevel: nextRankPowerLevel,
+                    powerLevelIncrease: powerLevelIncrease,
+                    progressPercentage: progressToNext,
+                    nextRankPlayerName: nextRankPlayer[0]
+                };
+            }
 
             showPlayerInfo(playerName, data) {
                 const playerInfo = document.getElementById('playerInfo');
@@ -1415,6 +1468,9 @@
                 
                 // Calculate Power Level
                 const powerData = this.calculatePowerLevel(playerName, data);
+                
+                // Calculate Power Level progression to next rank
+                const powerLevelProgression = this.calculatePowerLevelProgression(playerName, data);
                 
                 // Calculate Power Level change from previous day
                 let powerLevelChange = 0;
@@ -1470,6 +1526,28 @@
                         <div class="power-level-display">
                             <div class="power-level-number">${powerData.powerLevel.toLocaleString()}</div>
                             <div class="power-level-tier ${powerData.tierClass}">${powerData.tier}</div>
+                            ${powerLevelProgression ? `
+                                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; display: flex; justify-content: space-between;">
+                                        <span>Rank #${powerLevelProgression.currentRank}</span>
+                                        <span>Rank #${powerLevelProgression.nextRank}</span>
+                                    </div>
+                                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; height: 6px; margin-bottom: 6px; overflow: hidden;">
+                                        <div style="background: linear-gradient(90deg, #f39c12, #e67e22); height: 100%; width: ${powerLevelProgression.progressPercentage}%; border-radius: 8px; transition: width 0.3s ease;"></div>
+                                    </div>
+                                    <div style="font-size: 10px; color: var(--text-secondary); text-align: center;">
+                                        ${powerLevelProgression.expNeeded > 0 ? 
+                                            `${powerLevelProgression.expNeeded.toLocaleString()} EXP to rank #${powerLevelProgression.nextRank}` :
+                                            `Ready to advance! (+${powerLevelProgression.powerLevelIncrease.toLocaleString()} power)`
+                                        }
+                                    </div>
+                                    ${powerLevelProgression.nextRankPlayerName ? `
+                                        <div style="font-size: 9px; color: var(--text-muted); text-align: center; margin-top: 2px;">
+                                            vs ${powerLevelProgression.nextRankPlayerName}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
                         </div>
                         
                         <div class="level-progress-display" style="text-align: center; padding: 16px; background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(46, 204, 113, 0.1)); border-radius: 12px; margin-bottom: 16px; border: 2px solid var(--border-color);">
