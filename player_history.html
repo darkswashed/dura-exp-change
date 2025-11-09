@@ -69,14 +69,14 @@
             display: grid;
             grid-template-columns: 1fr; /* MODIFIED: Full width since sidebars are hidden */
             gap: 20px;
-            max-width: 90%; /* MODIFIED: Wider layout without sidebars */
+            max-width: 100%; /* MODIFIED: Full width layout */
             margin: 0 auto;
+            padding: 0 20px; /* ADDED: Some padding on the sides */
         }
 
         .main-content {
             min-width: 0; /* Prevents overflow */
-            max-width: 1200px; /* ADDED: Center the main content */
-            margin: 0 auto; /* ADDED: Center the main content */
+            width: 100%; /* MODIFIED: Full width */
         }
 
         @media (max-width: 1200px) {
