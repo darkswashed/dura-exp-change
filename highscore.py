@@ -633,24 +633,17 @@ def compare_and_generate_html(today_data, yesterday_data, output_file, reference
         today_exp = player['today_exp']
         today_rank = player['today_rank']
         
-        # Format changes with appropriate styling and percentages
+        # Format changes with appropriate styling
         def format_exp_change(change, previous_exp):
             if change is None:
                 return '<span class="na">N/A</span>'
             elif change == 0:
                 return '<span class="neutral">0</span>'
             else:
-                # Calculate percentage
-                if previous_exp is not None and previous_exp > 0:
-                    percentage = (change / previous_exp) * 100
-                    percentage_str = f"({percentage:+.2f}%)"
-                else:
-                    percentage_str = ""
-                
                 if change > 0:
-                    return f'<span class="gain">+{change:,} {percentage_str}</span>'
+                    return f'<span class="gain">+{change:,}</span>'
                 else:
-                    return f'<span class="loss">{change:,} {percentage_str}</span>'
+                    return f'<span class="loss">{change:,}</span>'
         
         def format_rank_change(change):
             if change is None:

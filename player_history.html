@@ -533,6 +533,7 @@
         
         /* Sidebar Styles */
         .sidebar {
+            display: none; /* DISABLED: Hide sidebars completely */
             background: var(--bg-secondary);
             border-radius: 8px;
             padding: 20px;
@@ -952,7 +953,7 @@
                     await this.loadAllCSVFiles();
                     
                     // Update sidebars after loading all data
-                    this.updateSidebars();
+                    // this.updateSidebars(); // DISABLED: Sidebar leaderboards calculations
                     
                 } catch (error) {
                     this.showError(`Error loading CSV files: ${error.message}`);
