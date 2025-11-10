@@ -1,13 +1,22 @@
-# Dura Highscores Tracker
+# Dura Online Experience Tracker
 
-Automated tracking and comparison of player experience on Dura Online Classic.
+Automated tracking and analysis of player experience on Dura Online Classic with interactive web interfaces.
+
+## 🌐 Live Pages
+
+### 📊 [Daily Experience Changes](https://darkswashed.github.io/dura-exp-change/)
+Interactive leaderboard showing daily, weekly, and monthly experience gains/losses for all players. Features sortable columns, filtering options, and comparison tools to track player progress and rankings.
+
+### 📈 [Player History Tracker](https://darkswashed.github.io/dura-exp-change/player_history.html)  
+Search for any player and view their complete experience history with interactive charts and graphs. Track individual player progression, power levels, and ranking changes over time.
 
 ## Features
 
-- 🔍 **Web Scraping**: Automatically scrapes player experience data
-- 📊 **Comparison Reports**: Generates HTML reports comparing daily changes
+- 🔍 **Web Scraping**: Automatically scrapes player experience data daily
+- 📊 **Daily Comparisons**: Shows experience changes across multiple time periods
+- 📈 **Individual Tracking**: Complete player history with visual charts
 - 🤖 **GitHub Actions**: Fully automated with scheduled runs
-- 📈 **GitHub Pages**: Hosts comparison reports
+- 🌐 **GitHub Pages**: Live web interface for data exploration
 
 ## Setup Instructions
 
@@ -56,7 +65,9 @@ You can also trigger the workflow manually:
 │   ├── highscores_2025-10-03.csv
 │   └── highscores_2025-10-04.csv
 ├── highscore.py               # Main Python script
-├── index.html                 # Generated comparison report
+├── experience_calculator.py   # Experience calculation utilities
+├── index.html                 # Daily experience changes page
+├── player_history.html        # Individual player tracker page
 ├── requirements.txt           # Python dependencies
 └── README.md                  # This file
 ```
@@ -89,9 +100,13 @@ The workflow runs automatically on schedule, but you can also:
 
 ## Output
 
-- **CSV Files**: Stored in `snapshots/` directory
-- **HTML Report**: Generated as `index.html` (viewable via GitHub Pages)
-- **Console Output**: Status updates and statistics printed to workflow logs
+### Generated Pages
+- **[index.html](https://darkswashed.github.io/dura-exp-change/)**: Daily experience comparison table with sorting and filtering
+- **[player_history.html](https://darkswashed.github.io/dura-exp-change/player_history.html)**: Individual player tracking with interactive charts
+
+### Data Files
+- **CSV Snapshots**: Stored in `snapshots/` directory with daily player data
+- **Console Logs**: Status updates and statistics in workflow logs
 
 ## Troubleshooting
 
