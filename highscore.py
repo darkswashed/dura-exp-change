@@ -450,19 +450,9 @@ def compare_and_generate_html(today_data, yesterday_data, output_file, reference
             }}
             
             .banner img {{
-                width: 320px;
-                height: 50px;
                 max-width: 100%;
                 height: auto;
                 object-fit: contain;
-            }}
-            
-            /* Mobile responsiveness for banner */
-            @media (max-width: 480px) {{
-                .banner img {{
-                    width: 90%;
-                    max-width: 320px;
-                }}
             }}
             
             .controls {{
